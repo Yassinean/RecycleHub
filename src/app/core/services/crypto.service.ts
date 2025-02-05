@@ -1,17 +1,21 @@
 import { Injectable } from '@angular/core';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CryptoService {
-  private readonly SALT_ROUNDS = 10;
+  private encoder = new TextEncoder();
 
   async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, this.SALT_ROUNDS);
+    const data = this.encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   async comparePasswords(password: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(password, hash);
+    const hashedPassword = await this.hashPassword(password);
+    return hashedPassword === hash;
   }
 } 

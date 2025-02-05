@@ -21,13 +21,20 @@ export class AuthService {
       return throwError(() => new Error('Email and password are required'));
     }
 
+    // Vérifier que tous les champs requis sont présents
+    const requiredFields = ['firstName', 'lastName', 'phoneNumber', 'address', 'dateOfBirth'];
+    for (const field of requiredFields) {
+      if (!user[field as keyof User]) {
+        return throwError(() => new Error(`${field} is required`));
+      }
+    }
+
     return this.indexedDB.get<User>('users', user.email).pipe(
       catchError(() => of(null)),
       switchMap(existingUser => {
         if (existingUser) {
           return throwError(() => new Error('User already exists'));
         }
-        // Hasher le mot de passe avant de stocker l'utilisateur
         return from(this.cryptoService.hashPassword(user.password!));
       }),
       map(hashedPassword => ({
@@ -36,9 +43,10 @@ export class AuthService {
         points: 0,
         role: 'CUSTOMER' as const
       })),
-      switchMap(userWithHashedPassword => 
-        this.indexedDB.add('users', userWithHashedPassword)
-      )
+      switchMap(userWithHashedPassword => {
+        console.log('Attempting to add user:', userWithHashedPassword);
+        return this.indexedDB.add('users', userWithHashedPassword);
+      })
     );
   }
 

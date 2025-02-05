@@ -1,0 +1,57 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <nav class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg">
+    <div class="p-4">
+      <div class="flex items-center space-x-3">
+        <img [src]="currentUser?.profilePicture" alt="Profile" class="h-10 w-10 rounded-full">
+        <div>
+          <p class="font-medium">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</p>
+          <p class="text-sm text-gray-500">{{ currentUser?.role === 'COLLECTOR' ? 'Collecteur' : 'Particulier' }}</p>
+        </div>
+      </div>
+
+      <div class="mt-8 space-y-2">
+        <a 
+          routerLink="/dashboard/home" 
+          routerLinkActive="bg-green-50 text-green-600"
+          class="block px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Tableau de bord
+        </a>
+        <a 
+          routerLink="/dashboard/collections" 
+          routerLinkActive="bg-green-50 text-green-600"
+          class="block px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          {{ currentUser?.role === 'COLLECTOR' ? 'Demandes de collecte' : 'Mes collectes' }}
+        </a>
+        <a 
+          *ngIf="currentUser?.role === 'CUSTOMER'"
+          routerLink="/dashboard/points" 
+          routerLinkActive="bg-green-50 text-green-600"
+          class="block px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Mes points ({{ currentUser?.points || 0 }})
+        </a>
+        <a 
+          routerLink="/dashboard/profile" 
+          routerLinkActive="bg-green-50 text-green-600"
+          class="block px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Mon profil
+        </a>
+        <button 
+          (click)="logout()"
+          class="w-full text-left px-4 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+        >
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="ml-64 p-8">
+    <router-outlet></router-outlet>
+  </div>
+</div>

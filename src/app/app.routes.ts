@@ -62,6 +62,12 @@ export const routes: Routes = [
           import('./features/dashboard/pages/collections/collection-form/collection-form.component')
             .then(m => m.CollectionFormComponent)
       },
+      {
+        path: 'collections/detail/:id',
+        loadComponent: () => 
+          import('./features/dashboard/pages/collections/collection-detail/collection-detail.component')
+            .then(m => m.CollectionDetailComponent)
+      },
       // {
       //   path: 'profile',
       //   loadComponent: () => 

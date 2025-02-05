@@ -8,7 +8,7 @@ export interface WasteItem {
 }
 
 export interface Collection {
-  id?: number;
+  id?: string;
   customerEmail: string;
   collectorEmail?: string;
   wasteItems: WasteItem[];

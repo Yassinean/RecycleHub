@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { User } from '../../models/user.model';
+import { VoucherOption } from '../../models/voucher.model';
 
 export const login = createAction(
   '[Auth] Login',
@@ -36,4 +37,19 @@ export const registerError = createAction(
   props<{ error: string }>()
 );
 
-export const logout = createAction('[Auth] Logout'); 
+export const logout = createAction('[Auth] Logout');
+
+export const convertPoints = createAction(
+  '[Auth] Convert Points',
+  props<{ points: number; voucher: VoucherOption }>()
+);
+
+export const convertPointsSuccess = createAction(
+  '[Auth] Convert Points Success',
+  props<{ user: User }>()
+);
+
+export const convertPointsFailure = createAction(
+  '[Auth] Convert Points Failure',
+  props<{ error: string }>()
+); 

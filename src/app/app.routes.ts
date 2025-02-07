@@ -42,31 +42,36 @@ export const routes: Routes = [
         path: 'home',
         loadComponent: () => 
           import('./features/dashboard/dashboard-home/dashboard-home.component')
-            .then(m => m.DashboardHomeComponent)
+            .then(m => m.DashboardHomeComponent),
+        title: 'Accueil - RecycleHub'
       },
       {
         path: 'collections',
         loadComponent: () => 
           import('./features/dashboard/pages/collections/collections.component')
-            .then(m => m.CollectionsComponent)
+            .then(m => m.CollectionsComponent),
+        title: 'Mes collectes - RecycleHub'
       },
       {
         path: 'collections/new',
         loadComponent: () => 
           import('./features/dashboard/pages/collections/collection-form/collection-form.component')
-            .then(m => m.CollectionFormComponent)
+            .then(m => m.CollectionFormComponent),
+        title: 'Nouvelle collecte - RecycleHub'
       },
       {
         path: 'collections/edit/:id',
         loadComponent: () => 
           import('./features/dashboard/pages/collections/collection-form/collection-form.component')
-            .then(m => m.CollectionFormComponent)
+            .then(m => m.CollectionFormComponent),
+        title: 'Modifier une collecte - RecycleHub'
       },
       {
         path: 'collections/detail/:id',
         loadComponent: () => 
           import('./features/dashboard/pages/collections/collection-detail/collection-detail.component')
-            .then(m => m.CollectionDetailComponent)
+            .then(m => m.CollectionDetailComponent),
+        title: 'Détails de la collecte - RecycleHub'
       },
       // {
       //   path: 'profile',
@@ -74,12 +79,13 @@ export const routes: Routes = [
       //     import('./features/dashboard/pages/profile/profile.component')
       //       .then(m => m.ProfileComponent)
       // },
-      // {
-      //   path: 'points',
-      //   loadComponent: () => 
-      //     import('./features/dashboard/pages/points/points.component')
-      //       .then(m => m.PointsComponent)
-      // },
+      {
+        path: 'points',
+        loadComponent: () => 
+          import('./features/dashboard/pages/points/points.component')
+            .then(m => m.PointsComponent),
+        title: 'Mes points - RecycleHub'
+      },
       {
         path: '',
         redirectTo: 'home',

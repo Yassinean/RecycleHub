@@ -19,6 +19,17 @@ export class CollectionsComponent implements OnInit {
   loading$ = this.store.select(selectCollectionsLoading);
   error$ = this.store.select(selectCollectionsError);
 
+  totalPendingWeight$ = this.store.select(selectCollections).pipe(
+    map(collections => collections
+      .filter(c => c.status === 'PENDING')
+      .reduce((total, c) => total + c.totalEstimatedWeight, 0)
+    )
+  );
+
+  canAddCollection$ = this.totalPendingWeight$.pipe(
+    map(totalWeight => totalWeight < 10000)
+  );
+
   constructor(private store: Store, private router: Router) {}
 
   ngOnInit(): void {

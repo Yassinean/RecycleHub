@@ -84,6 +84,18 @@ export class CollectionEffects {
     )
   );
 
+  loadCollection$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.loadCollection),
+      mergeMap(({ id }) =>
+        this.collectionService.getCollection(id).pipe(
+          map(collection => CollectionActions.loadCollectionSuccess({ collection })),
+          catchError(error => of(CollectionActions.loadCollectionFailure({ error: error.message })))
+        )
+      )
+    )
+  );
+
   constructor(
     private actions$: Actions,
     private collectionService: CollectionService,

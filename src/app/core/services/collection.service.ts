@@ -49,6 +49,21 @@ export class CollectionService {
           return throwError(() => new Error('Vous avez déjà 3 demandes de collecte en attente'));
         }
 
+        // Calculer le poids total de toutes les collectes en attente
+        const totalPendingWeight = pendingCollections.reduce(
+          (total, c) => total + c.totalEstimatedWeight, 
+          0
+        );
+
+        // Ajouter le poids de la nouvelle collecte
+        const newTotalWeight = totalPendingWeight + (collection.totalEstimatedWeight || 0);
+
+        if (newTotalWeight > 10000) {
+          return throwError(() => 
+            new Error(`Le poids total de vos collectes en attente (${totalPendingWeight/1000}kg) plus cette nouvelle collecte (${collection.totalEstimatedWeight!/1000}kg) ne doit pas dépasser 10kg`)
+          );
+        }
+
         const newCollection: Collection = {
           ...collection as Collection,
           customerEmail: currentUser.email,
@@ -62,17 +77,87 @@ export class CollectionService {
     );
   }
 
-  getPendingCollections(): Observable<Collection[]> {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      return throwError(() => new Error('User not authenticated'));
-    }
+  updateCollection(id: string, collection: Partial<Collection>): Observable<Collection> {
+    return this.storageService.getCollection(id).pipe(
+      switchMap(existingCollection => {
+        if (!existingCollection) {
+          return throwError(() => new Error('Collection not found'));
+        }
 
-    return this.storageService.getPendingCollections(
-      currentUser.email,
-      currentUser.role === 'COLLECTOR'
+        // Vérifier le poids total des collections en attente
+        return this.getPendingCollections().pipe(
+          map(collections => collections.filter(c => 
+            c.customerEmail === existingCollection.customerEmail && 
+            c.status === 'PENDING' &&
+            c.id !== id  // Exclure la collection en cours de modification
+          )),
+          switchMap(pendingCollections => {
+            // Calculer le poids total des autres collections en attente
+            const totalPendingWeight = pendingCollections.reduce(
+              (total, c) => total + c.totalEstimatedWeight,
+              0
+            );
+
+            // Ajouter le nouveau poids de la collection modifiée
+            const newTotalWeight = totalPendingWeight + (collection.totalEstimatedWeight || 0);
+
+            if (newTotalWeight > 10000) {
+              return throwError(() => 
+                new Error(`Le poids total de vos collectes en attente (${totalPendingWeight/1000}kg) plus cette collecte (${collection.totalEstimatedWeight!/1000}kg) ne doit pas dépasser 10kg`)
+              );
+            }
+
+            const updatedCollection = {
+              ...existingCollection,
+              ...collection,
+              updatedAt: new Date()
+            };
+
+            return this.storageService.saveCollection(updatedCollection);
+          })
+        );
+      })
     );
   }
+
+  getCollection(id: string): Observable<Collection> {
+    return this.storageService.getCollection(id).pipe(
+      map(collection => {
+        if (!collection) {
+          throw new Error('Collection not found');
+        }
+        return collection;
+      })
+    );
+  }
+
+  deleteCollection(id: string): Observable<void> {
+    return this.storageService.deleteCollection(id);
+  }
+
+  private updateCustomerPoints(collection: Collection): void {
+    const totalPoints = collection.wasteItems.reduce((acc, item) => {
+      if (item.actualWeight) {
+        // Convertir les grammes en kg et multiplier par les points par kg
+        return acc + (item.actualWeight / 1000) * this.POINTS_PER_KG[item.type];
+      }
+      return acc;
+    }, 0);
+
+    // Mettre à jour les points de l'utilisateur
+    this.storageService.getUser(collection.customerEmail).pipe(
+      map((user) => {
+        if (!user) throw new Error('User not found');
+        return {
+          ...user,
+          points: (user.points || 0) + Math.floor(totalPoints),
+        };
+      }),
+      switchMap((updatedUser) => this.storageService.saveUser(updatedUser))
+    )
+      .subscribe();
+  }
+
 
   updateCollectionStatus(
     collectionId: string,
@@ -105,57 +190,15 @@ export class CollectionService {
     );
   }
 
-  private updateCustomerPoints(collection: Collection): void {
-    const totalPoints = collection.wasteItems.reduce((acc, item) => {
-      if (item.actualWeight) {
-        // Convertir les grammes en kg et multiplier par les points par kg
-        return acc + (item.actualWeight / 1000) * this.POINTS_PER_KG[item.type];
-      }
-      return acc;
-    }, 0);
+  getPendingCollections(): Observable<Collection[]> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      return throwError(() => new Error('User not authenticated'));
+    }
 
-    // Mettre à jour les points de l'utilisateur
-    this.storageService.getUser(collection.customerEmail).pipe(
-      map((user) => {
-        if (!user) throw new Error('User not found');
-        return {
-          ...user,
-          points: (user.points || 0) + Math.floor(totalPoints),
-        };
-      }),
-      switchMap((updatedUser) => this.storageService.saveUser(updatedUser))
-    )
-      .subscribe();
-  }
-
-  getCollection(id: string): Observable<Collection> {
-    return this.storageService.getCollection(id).pipe(
-      map(collection => {
-        if (!collection) {
-          throw new Error('Collection not found');
-        }
-        return collection;
-      })
-    );
-  }
-
-  deleteCollection(id: string): Observable<void> {
-    return this.storageService.deleteCollection(id);
-  }
-
-  updateCollection(id: string, collection: Partial<Collection>): Observable<Collection> {
-    return this.storageService.getCollection(id).pipe(
-      switchMap(existingCollection => {
-        if (!existingCollection) {
-          return throwError(() => new Error('Collection not found'));
-        }
-        const updatedCollection = {
-          ...existingCollection,
-          ...collection,
-          updatedAt: new Date()
-        };
-        return this.storageService.saveCollection(updatedCollection);
-      })
+    return this.storageService.getPendingCollections(
+      currentUser.email,
+      currentUser.role === 'COLLECTOR'
     );
   }
 }

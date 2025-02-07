@@ -5,6 +5,7 @@ export interface WasteItem {
   type: WasteType;
   estimatedWeight: number;  // en grammes
   actualWeight?: number;    // en grammes, rempli par le collecteur
+  photos?: string[];  // URLs des photos
 }
 
 export interface Collection {

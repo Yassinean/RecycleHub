@@ -130,16 +130,8 @@
             {{ collection.scheduledTime }}
           </p>
         </div>
-        <span
-          class="px-2 py-1 text-xs font-medium rounded-full"
-          [ngClass]="{
-            'bg-yellow-100 text-yellow-800': collection.status === 'PENDING',
-            'bg-blue-100 text-blue-800': collection.status === 'IN_PROGRESS',
-            'bg-green-100 text-green-800': collection.status === 'COMPLETED',
-            'bg-red-100 text-red-800': collection.status === 'REJECTED'
-          }"
-        >
-          {{ collection.status }}
+        <span class="px-2 py-1 text-xs font-medium rounded-full" [ngClass]="getStatusClass(collection.status)">
+          {{ statusLabels[collection.status] }}
         </span>
       </div>
 
@@ -167,16 +159,38 @@
         </div>
       </div>
 
+      <div *ngIf="(currentUser$ | async)?.role === 'COLLECTOR'" class="mt-4 flex justify-end space-x-3">
+        <ng-container [ngSwitch]="collection.status">
+          <ng-container *ngSwitchCase="'PENDING'">
+            <button
+              (click)="onUpdateStatus(collection.id, 'OCCUPIED')"
+              class="btn-primary"
+            >
+              Accepter la collecte
+            </button>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'OCCUPIED'">
+            <button
+              (click)="onUpdateStatus(collection.id, 'IN_PROGRESS')"
+              class="btn-primary"
+            >
+              Commencer la collecte
+            </button>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'IN_PROGRESS'">
+            <button
+              routerLink="validate/{{ collection.id }}"
+              class="btn-primary"
+            >
+              Valider la collecte
+            </button>
+          </ng-container>
+        </ng-container>
+      </div>
+
       <div class="mt-4 flex justify-end space-x-3">
-        <button
-          *ngIf="
-            (currentUser$ | async)?.role === 'COLLECTOR' &&
-            collection.status === 'PENDING'
-          "
-          class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        >
-          Accepter
-        </button>
         <button *ngIf="(currentUser$ | async)?.role === 'COLLECTOR'"
           routerLink="detail/{{ collection.id }}"
           class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -184,7 +198,7 @@
           Voir détails
         </button>
 
-        <ng-container *ngIf="canModify$ | async">
+        <ng-container *ngIf="(currentUser$ | async)?.role === 'CUSTOMER' && !(canAddCollection$ | async)">
           <button
             (click)="onEditCollection(collection.id)"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

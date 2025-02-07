@@ -1,5 +1,10 @@
 export type WasteType = 'PLASTIC' | 'GLASS' | 'PAPER' | 'METAL';
-export type CollectionStatus = 'PENDING' | 'OCCUPIED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+export type CollectionStatus = 
+  | 'PENDING'    // En attente
+  | 'OCCUPIED'   // Occupée
+  | 'IN_PROGRESS' // En cours
+  | 'COMPLETED'  // Validée
+  | 'REJECTED';  // Rejetée
 
 export interface WasteItem {
   type: WasteType;

@@ -73,6 +73,13 @@ export const routes: Routes = [
             .then(m => m.CollectionDetailComponent),
         title: 'Détails de la collecte - RecycleHub'
       },
+      {
+        path: 'collections/validate/:id',
+        loadComponent: () => 
+          import('./features/dashboard/pages/collections/collection-validate/collection-validate.component')
+            .then(m => m.CollectionValidateComponent),
+        title: 'Valider la collecte - RecycleHub'
+      },
       // {
       //   path: 'profile',
       //   loadComponent: () => 

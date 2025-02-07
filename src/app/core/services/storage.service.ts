@@ -10,6 +10,10 @@ export class StorageService {
   private readonly COLLECTIONS_KEY = 'collections';
   private readonly USERS_KEY = 'users';
 
+  constructor() {
+    this.initializeCollector();
+  }
+
   // Users
   getUsers(): User[] {
     return JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
@@ -72,13 +76,48 @@ export class StorageService {
 
   getPendingCollections(userEmail: string, isCollector: boolean): Observable<Collection[]> {
     const collections = this.getCollections();
-    const filtered = collections.filter(c => {
-      if (isCollector) {
-        return c.status === 'PENDING' && !c.collectorEmail;
-      } else {
-        return c.customerEmail === userEmail;
-      }
-    });
+    let filtered = collections;
+
+    if (isCollector) {
+      // Pour un collecteur, retourner toutes les collectes en attente ou ses collectes en cours
+      filtered = collections.filter(c => 
+        c.status === 'PENDING' || // Toutes les collectes en attente
+        (c.collectorEmail === userEmail && ['OCCUPIED', 'IN_PROGRESS'].includes(c.status)) // Ses collectes en cours
+      );
+    } else {
+      // Pour un client, retourner ses propres collections
+      filtered = collections.filter(c => c.customerEmail === userEmail);
+    }
+
     return of(filtered);
+  }
+
+  private initializeCollector() {
+    const collector = {
+      email: 'collector@recycling.com',
+      password: 'collector123',
+      role: 'COLLECTOR' as const,
+      firstName: 'John',
+      lastName: 'Collector',
+      address: {
+        street: 'Rue Mohammed V',
+        city: 'Marrakech',
+        postalCode: '40000'
+      },
+      phoneNumber: '0600000000',
+      dateOfBirth: new Date(),
+      points: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const users = this.getUsers();
+    const existingCollector = users.find(u => u.email === collector.email);
+
+    if (!existingCollector) {
+      users.push(collector);
+      localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+      console.log('Collector initialized:', collector);
+    }
   }
 } 

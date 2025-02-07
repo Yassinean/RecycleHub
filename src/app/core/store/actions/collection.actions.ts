@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { Collection } from '../../models/collection.model';
+import { Collection, CollectionStatus } from '../../models/collection.model';
 
 export const loadCollections = createAction('[Collection] Load Collections');
 
@@ -29,8 +29,22 @@ export const createCollectionFailure = createAction(
 );
 
 export const updateCollectionStatus = createAction(
-  '[Collection] Update Collection Status',
-  props<{ id: string; status: string; data?: Partial<Collection> }>()
+  '[Collection] Update Status',
+  props<{ 
+    id: string; 
+    status: CollectionStatus; 
+    data?: Partial<Collection>;
+  }>()
+);
+
+export const updateCollectionStatusSuccess = createAction(
+  '[Collection] Update Status Success',
+  props<{ collection: Collection }>()
+);
+
+export const updateCollectionStatusFailure = createAction(
+  '[Collection] Update Status Failure',
+  props<{ error: string }>()
 );
 
 export const loadCollection = createAction(

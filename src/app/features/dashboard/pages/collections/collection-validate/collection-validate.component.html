@@ -1,0 +1,72 @@
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900">Valider la collecte</h2>
+    <p class="mt-1 text-sm text-gray-500">
+      Vérifiez et validez les déchets collectés
+    </p>
+  </div>
+
+  <form [formGroup]="validateForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <div *ngFor="let item of collection?.wasteItems; let i = index" class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">
+          {{ getWasteTypeLabel(item.type) }}
+        </h3>
+        <span class="text-sm text-gray-500">
+          Poids estimé : {{ item.estimatedWeight / 1000 }} kg
+        </span>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">
+            Poids réel (en grammes)
+          </label>
+          <input
+            type="number"
+            [formControlName]="'weight_' + i"
+            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+          >
+          <div *ngIf="validateForm.get('weight_' + i)?.errors?.['required'] && validateForm.get('weight_' + i)?.touched" 
+               class="mt-1 text-sm text-red-600">
+            Le poids réel est requis
+          </div>
+          <div *ngIf="validateForm.get('weight_' + i)?.errors?.['min']" 
+               class="mt-1 text-sm text-red-600">
+            Le poids doit être positif
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">
+            Photos (optionnel)
+          </label>
+          <input
+            type="file"
+            [formControlName]="'photos_' + i"
+            multiple
+            accept="image/*"
+            class="mt-1 block w-full"
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end space-x-3">
+      <button
+        type="button"
+        (click)="onReject()"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+      >
+        Rejeter
+      </button>
+      <button
+        type="submit"
+        [disabled]="validateForm.invalid"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+      >
+        Valider
+      </button>
+    </div>
+  </form>
+</div>

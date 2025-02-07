@@ -164,6 +164,11 @@ export class CollectionService {
     status: CollectionStatus,
     data?: Partial<Collection>
   ): Observable<Collection> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      return throwError(() => new Error('User not authenticated'));
+    }
+
     return this.storageService.getCollection(collectionId).pipe(
       switchMap((collection) => {
         if (!collection) {
@@ -174,13 +179,14 @@ export class CollectionService {
           ...collection,
           ...data,
           status,
+          collectorEmail: currentUser.email,
           updatedAt: new Date(),
           ...(status === 'COMPLETED' && { completedAt: new Date() }),
+          ...(status === 'REJECTED' && { rejectionReason: data?.rejectionReason })
         };
 
         return this.storageService.saveCollection(updatedCollection).pipe(
           tap(() => {
-            // Si la collecte est terminée, mettre à jour les points du client
             if (status === 'COMPLETED' && updatedCollection.totalActualWeight) {
               this.updateCustomerPoints(updatedCollection);
             }
@@ -196,9 +202,27 @@ export class CollectionService {
       return throwError(() => new Error('User not authenticated'));
     }
 
+    console.log('Current user:', currentUser); // Debug log
+
     return this.storageService.getPendingCollections(
       currentUser.email,
       currentUser.role === 'COLLECTOR'
+    ).pipe(
+      map(collections => {
+        console.log('Collections before filter:', collections); // Debug log
+
+        if (currentUser.role === 'COLLECTOR' && currentUser.address?.city) {
+          const collectorCity = currentUser.address.city.toLowerCase();
+          const filtered = collections.filter(collection => 
+            collection.address.city.toLowerCase() === collectorCity
+          );
+          console.log('Filtered collections:', filtered); // Debug log
+          console.log('cities :', currentUser.address.city); // Debug log
+          return filtered;
+        }
+        return collections;
+      })
     );
   }
+  
 }

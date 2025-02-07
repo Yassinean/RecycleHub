@@ -8,6 +8,7 @@ import { selectAuthUser } from '../../../../core/store/selectors/auth.selectors'
 import { map, withLatestFrom, Subject } from 'rxjs';
 import { CollectionStatus } from '../../../../core/models/collection.model';
 import { takeUntil } from 'rxjs/operators';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-collections',
@@ -42,7 +43,17 @@ export class CollectionsComponent implements OnInit, OnDestroy {
     'REJECTED': 'Rejetée'
   };
 
-  constructor(private store: Store, private router: Router) {}
+  readonly statusClasses: Record<CollectionStatus, string> = {
+    'PENDING': 'bg-yellow-100 text-yellow-800',
+    'OCCUPIED': 'bg-blue-100 text-blue-800',
+    'IN_PROGRESS': 'bg-purple-100 text-purple-800',
+    'COMPLETED': 'bg-green-100 text-green-800',
+    'REJECTED': 'bg-red-100 text-red-800'
+  };
+
+  readonly statusOrder: CollectionStatus[] = ['PENDING', 'OCCUPIED', 'IN_PROGRESS', 'COMPLETED'];
+
+  constructor(private store: Store, private router: Router, private authService: AuthService) {}
 
   ngOnInit(): void {
     console.log('CollectionsComponent initialized'); // Debug log
@@ -93,21 +104,60 @@ export class CollectionsComponent implements OnInit, OnDestroy {
 
   onUpdateStatus(id: string | undefined, status: CollectionStatus) {
     if (!id) return;
+    
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
     this.store.dispatch(CollectionActions.updateCollectionStatus({ 
       id, 
-      status 
+      status,
+      data: {
+        collectorEmail: currentUser.email
+      }
     }));
-    this.store.dispatch(CollectionActions.loadCollections());
+
+    // Recharger les collections après la mise à jour
+    setTimeout(() => {
+      this.store.dispatch(CollectionActions.loadCollections());
+    }, 500);
   }
 
   getStatusClass(status: CollectionStatus): string {
-    const classes = {
-      'PENDING': 'bg-yellow-100 text-yellow-800',
-      'OCCUPIED': 'bg-blue-100 text-blue-800',
-      'IN_PROGRESS': 'bg-purple-100 text-purple-800',
-      'COMPLETED': 'bg-green-100 text-green-800',
-      'REJECTED': 'bg-red-100 text-red-800'
+    return this.statusClasses[status] || '';
+  }
+
+  getProgressWidth(status: CollectionStatus): string {
+    const currentIndex = this.statusOrder.indexOf(status);
+    if (currentIndex === -1) return '0%';
+    
+    const progress = (currentIndex / (this.statusOrder.length - 1)) * 100;
+    return `${progress}%`;
+  }
+
+  isStatusCompleted(status: CollectionStatus, currentStatus: CollectionStatus): boolean {
+    const statusIndex = this.statusOrder.indexOf(status);
+    const currentIndex = this.statusOrder.indexOf(currentStatus);
+    return statusIndex < currentIndex || currentStatus === 'COMPLETED';
+  }
+
+  isStatusActive(status: CollectionStatus, currentStatus: CollectionStatus): boolean {
+    return status === currentStatus;
+  }
+
+  isStatusReached(status: CollectionStatus, currentStatus: CollectionStatus): boolean {
+    const statusIndex = this.statusOrder.indexOf(status);
+    const currentIndex = this.statusOrder.indexOf(currentStatus);
+    return statusIndex <= currentIndex;
+  }
+
+  getStatusDescription(status: CollectionStatus): string {
+    const descriptions: Record<CollectionStatus, string> = {
+      'PENDING': 'En attente de prise en charge par un collecteur',
+      'OCCUPIED': 'Le collecteur est en route vers le lieu de collecte',
+      'IN_PROGRESS': 'La collecte est en cours sur place',
+      'COMPLETED': 'La collecte a été validée avec succès',
+      'REJECTED': 'La collecte a été rejetée'
     };
-    return classes[status] || '';
+    return descriptions[status] || '';
   }
 } 

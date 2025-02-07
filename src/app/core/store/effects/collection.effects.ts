@@ -54,13 +54,11 @@ export class CollectionEffects {
     { dispatch: false }
   );
 
-  updateCollectionSuccess$ = createEffect(
-    () =>
-      this.actions$.pipe(
-        ofType(CollectionActions.updateCollectionSuccess),
-        tap(() => this.router.navigate(['/dashboard/collections']))
-      ),
-    { dispatch: false }
+  updateCollectionSuccess$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.updateCollectionSuccess),
+      map(() => CollectionActions.loadCollections())
+    )
   );
 
   deleteCollectionSuccess$ = createEffect(
@@ -91,6 +89,18 @@ export class CollectionEffects {
         this.collectionService.getCollection(id).pipe(
           map(collection => CollectionActions.loadCollectionSuccess({ collection })),
           catchError(error => of(CollectionActions.loadCollectionFailure({ error: error.message })))
+        )
+      )
+    )
+  );
+
+  updateCollectionStatus$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CollectionActions.updateCollectionStatus),
+      mergeMap(({ id, status, data }) =>
+        this.collectionService.updateCollectionStatus(id, status, data).pipe(
+          map(collection => CollectionActions.updateCollectionSuccess({ collection })),
+          catchError(error => of(CollectionActions.updateCollectionFailure({ error: error.message })))
         )
       )
     )

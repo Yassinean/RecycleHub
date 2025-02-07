@@ -159,37 +159,31 @@ export class CollectionService {
   }
 
 
-  updateCollectionStatus(
-    collectionId: string,
-    status: CollectionStatus,
-    data?: Partial<Collection>
-  ): Observable<Collection> {
+  updateCollectionStatus(id: string, status: CollectionStatus, data?: any): Observable<Collection> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    return this.storageService.getCollection(collectionId).pipe(
-      switchMap((collection) => {
+    return this.getCollection(id).pipe(
+      switchMap(collection => {
         if (!collection) {
           return throwError(() => new Error('Collection not found'));
         }
 
-        const updatedCollection: Collection = {
+        const updatedCollection = {
           ...collection,
-          ...data,
           status,
-          collectorEmail: currentUser.email,
+          collectorEmail: status === 'OCCUPIED' ? currentUser.email : collection.collectorEmail,
           updatedAt: new Date(),
           ...(status === 'COMPLETED' && { completedAt: new Date() }),
-          ...(status === 'REJECTED' && { rejectionReason: data?.rejectionReason })
+          ...(status === 'REJECTED' && { rejectionReason: data?.rejectionReason }),
+          ...(data || {})
         };
 
         return this.storageService.saveCollection(updatedCollection).pipe(
           tap(() => {
-            if (status === 'COMPLETED' && updatedCollection.totalActualWeight) {
-              this.updateCustomerPoints(updatedCollection);
-            }
+            console.log('Collection updated:', updatedCollection);
           })
         );
       })

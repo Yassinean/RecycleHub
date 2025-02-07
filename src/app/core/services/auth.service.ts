@@ -1,114 +1,58 @@
 import { Injectable } from '@angular/core';
-import { Observable, from, throwError, of } from 'rxjs';
-import { map, catchError, tap, switchMap } from 'rxjs/operators';
+import { Observable, throwError, of, BehaviorSubject } from 'rxjs';
 import { User } from '../models/user.model';
-import { IndexedDBService } from './indexed-db.service';
-import { CryptoService } from './crypto.service';
+import { StorageService } from './storage.service';
+import { map, switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private currentUser: User | null = null;
+  private readonly USER_KEY = 'currentUser';
+  private currentUserSubject: BehaviorSubject<User | null>;
 
-  constructor(
-    private indexedDB: IndexedDBService,
-    private cryptoService: CryptoService
-  ) {}
+  constructor(private storageService: StorageService) {
+    const storedUser = localStorage.getItem(this.USER_KEY);
+    this.currentUserSubject = new BehaviorSubject<User | null>(storedUser ? JSON.parse(storedUser) : null);
+  }
 
   register(user: User): Observable<User> {
-    if (!user.email || !user.password) {
-      return throwError(() => new Error('Email and password are required'));
-    }
-
-    // Vérifier que tous les champs requis sont présents
-    const requiredFields = ['firstName', 'lastName', 'phoneNumber', 'address', 'dateOfBirth'];
-    for (const field of requiredFields) {
-      if (!user[field as keyof User]) {
-        return throwError(() => new Error(`${field} is required`));
-      }
-    }
-
-    return this.indexedDB.get<User>('users', user.email).pipe(
-      catchError(() => of(null)),
+    return this.storageService.getUser(user.email).pipe(
       switchMap(existingUser => {
         if (existingUser) {
-          return throwError(() => new Error('User already exists'));
+          return throwError(() => new Error('Cet email est déjà utilisé'));
         }
-        return from(this.cryptoService.hashPassword(user.password!));
-      }),
-      map(hashedPassword => ({
-        ...user,
-        password: hashedPassword,
-        points: 0,
-        role: 'CUSTOMER' as const
-      })),
-      switchMap(userWithHashedPassword => {
-        console.log('Attempting to add user:', userWithHashedPassword);
-        return this.indexedDB.add('users', userWithHashedPassword);
+        return this.storageService.saveUser(user);
       })
     );
   }
 
   login(email: string, password: string): Observable<User> {
-    return this.indexedDB.get<User>('users', email).pipe(
-      switchMap(user => {
-        if (!user) {
-          return throwError(() => new Error('Invalid email or password'));
+    return this.storageService.getUser(email).pipe(
+      map(user => {
+        if (!user || user.password !== password) {
+          throw new Error('Email ou mot de passe incorrect');
         }
-        
-        return from(this.cryptoService.comparePasswords(password, user.password!))
-          .pipe(
-            map(isMatch => {
-              if (!isMatch) {
-                throw new Error('Invalid email or password');
-              }
-              
-              // Ne pas inclure le mot de passe hashé dans l'objet stocké en session
-              const { password: _, ...userWithoutPassword } = user;
-              this.currentUser = userWithoutPassword;
-              localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-              
-              return userWithoutPassword;
-            })
-          );
+
+        const { password: _, ...userWithoutPassword } = user;
+        localStorage.setItem(this.USER_KEY, JSON.stringify(userWithoutPassword));
+        this.currentUserSubject.next(userWithoutPassword); // Update observable
+
+        return userWithoutPassword;
       })
     );
   }
 
   logout(): void {
-    this.currentUser = null;
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem(this.USER_KEY);
+    this.currentUserSubject.next(null);
   }
 
   getCurrentUser(): User | null {
-    if (!this.currentUser) {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        this.currentUser = JSON.parse(storedUser);
-      }
-    }
-    return this.currentUser;
+    return this.currentUserSubject.value;
   }
 
   isAuthenticated(): boolean {
     return !!this.getCurrentUser();
-  }
-
-  // Mise à jour de la méthode d'initialisation des collecteurs
-  initializeCollectors(collectors: User[]): Observable<void> {
-    return from(Promise.all(
-      collectors.map(async collector => {
-        const hashedPassword = await this.cryptoService.hashPassword(collector.password!);
-        const collectorWithHashedPassword = {
-          ...collector,
-          password: hashedPassword,
-          role: 'COLLECTOR' as const
-        };
-        return this.indexedDB.add('users', collectorWithHashedPassword).toPromise();
-      })
-    )).pipe(
-      map(() => void 0)
-    );
   }
 }

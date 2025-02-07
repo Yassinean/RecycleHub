@@ -3,15 +3,23 @@
   <div class="flex justify-between items-center">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">
-        {{ currentUser?.role === 'COLLECTOR' ? 'Demandes de collecte' : 'Mes collectes' }}
+        {{
+          (currentUser$ | async)?.role === "COLLECTOR"
+            ? "Demandes de collecte"
+            : "Mes collectes"
+        }}
       </h1>
       <p class="mt-1 text-sm text-gray-500">
-        {{ currentUser?.role === 'COLLECTOR' ? 'Liste des demandes disponibles' : 'Gérez vos demandes de collecte' }}
+        {{
+          (currentUser$ | async)?.role === "COLLECTOR"
+            ? "Liste des demandes disponibles"
+            : "Gérez vos demandes de collecte"
+        }}
       </p>
     </div>
 
     <button
-      *ngIf="currentUser?.role === 'CUSTOMER'"
+      *ngIf="(currentUser$ | async)?.role === 'CUSTOMER'"
       routerLink="new"
       class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
     >
@@ -20,15 +28,25 @@
   </div>
 
   <!-- Message d'erreur -->
-  <div *ngIf="error" class="rounded-md bg-red-50 p-4">
+  <div *ngIf="error$ | async as error" class="rounded-md bg-red-50 p-4">
     <div class="flex">
       <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        <svg
+          class="h-5 w-5 text-red-400"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+            clip-rule="evenodd"
+          />
         </svg>
       </div>
       <div class="ml-3">
-        <h3 class="text-sm font-medium text-red-800">Une erreur est survenue</h3>
+        <h3 class="text-sm font-medium text-red-800">
+          Une erreur est survenue
+        </h3>
         <div class="mt-2 text-sm text-red-700">
           <p>{{ error }}</p>
         </div>
@@ -37,36 +55,73 @@
   </div>
 
   <!-- Chargement -->
-  <div *ngIf="loading" class="text-center py-12">
-    <svg class="animate-spin h-8 w-8 text-green-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  <div *ngIf="loading$ | async" class="text-center py-12">
+    <svg
+      class="animate-spin h-8 w-8 text-green-600 mx-auto"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        class="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        stroke-width="4"
+      ></circle>
+      <path
+        class="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
     </svg>
   </div>
 
   <!-- Liste des collectes -->
-  <div *ngIf="!loading && collections.length === 0" class="text-center py-12">
-    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+  <div *ngIf="(collections$ | async)?.length === 0" class="text-center py-12">
+    <svg
+      class="mx-auto h-12 w-12 text-gray-400"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+      />
     </svg>
     <h3 class="mt-2 text-sm font-medium text-gray-900">Aucune collecte</h3>
     <p class="mt-1 text-sm text-gray-500">
-      {{ currentUser?.role === 'COLLECTOR' ? 'Aucune demande de collecte disponible pour le moment.' : 'Commencez par créer une nouvelle demande de collecte.' }}
+      {{
+        (currentUser$ | async)?.role === "COLLECTOR"
+          ? "Aucune demande de collecte disponible pour le moment."
+          : "Commencez par créer une nouvelle demande de collecte."
+      }}
     </p>
   </div>
 
-  <div *ngIf="!loading && collections.length > 0" class="grid gap-6 lg:grid-cols-2">
-    <div *ngFor="let collection of collections" class="bg-white shadow rounded-lg p-6">
+  <div
+    *ngIf="collections$ | async as collections"
+    class="grid gap-6 lg:grid-cols-2"
+  >
+    <div
+      *ngFor="let collection of collections"
+      class="bg-white shadow rounded-lg p-6"
+    >
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-lg font-medium text-gray-900">
             Collecte #{{ collection.id }}
           </h3>
           <p class="text-sm text-gray-500">
-            {{ collection.scheduledDate | date:'dd/MM/yyyy' }} à {{ collection.scheduledTime }}
+            {{ collection.scheduledDate | date : "dd/MM/yyyy" }} à
+            {{ collection.scheduledTime }}
           </p>
         </div>
-        <span 
+        <span
           class="px-2 py-1 text-xs font-medium rounded-full"
           [ngClass]="{
             'bg-yellow-100 text-yellow-800': collection.status === 'PENDING',
@@ -84,7 +139,7 @@
           <div>
             <dt class="text-sm font-medium text-gray-500">Adresse</dt>
             <dd class="mt-1 text-sm text-gray-900">
-              {{ collection.address.street }}<br>
+              {{ collection.address.street }}<br />
               {{ collection.address.postalCode }} {{ collection.address.city }}
             </dd>
           </div>
@@ -94,23 +149,81 @@
               {{ collection.totalEstimatedWeight / 1000 }} kg
             </dd>
           </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Notes</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              {{ collection.notes ? collection.notes : 'Aucune note' }}
+            </dd>
+          </div>
         </div>
       </div>
 
       <div class="mt-4 flex justify-end space-x-3">
         <button
-          *ngIf="currentUser?.role === 'COLLECTOR' && collection.status === 'PENDING'"
+          *ngIf="
+            (currentUser$ | async)?.role === 'COLLECTOR' &&
+            collection.status === 'PENDING'
+          "
           class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           Accepter
         </button>
-        <button
+        <button *ngIf="(currentUser$ | async)?.role === 'COLLECTOR'"
           routerLink="detail/{{ collection.id }}"
           class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           Voir détails
         </button>
+
+        <ng-container *ngIf="canModify$ | async">
+          <button
+            (click)="onEditCollection(collection.id)"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <svg
+              class="w-6 h-6 text-gray-800 dark:text-white"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"
+              />
+            </svg>
+            <span class="sr-only">Modifier</span>
+          </button>
+          <button
+            (click)="onDeleteCollection(collection.id)"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg
+              class="w-6 h-6 text-gray-800 dark:text-white"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"
+              />
+            </svg>
+            <span class="sr-only">Supprimer</span>
+          </button>
+        </ng-container>
       </div>
     </div>
   </div>
-</div> 
+</div>

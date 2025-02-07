@@ -6,7 +6,7 @@ import {
   CollectionStatus,
   WasteType,
 } from '../models/collection.model';
-import { IndexedDBService } from './indexed-db.service';
+import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
 import { User } from '../models/user.model';
 
@@ -22,44 +22,43 @@ export class CollectionService {
   };
 
   constructor(
-    private indexedDB: IndexedDBService,
+    private storageService: StorageService,
     private authService: AuthService
   ) {}
 
-  createCollection(
-    collection: Omit<Collection, 'id' | 'status' | 'createdAt' | 'updatedAt'>
-  ): Observable<Collection> {
+  createCollection(collection: Partial<Collection>): Observable<Collection> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User not authenticated'));
     }
 
+    // Vérifier le poids total
+    if (collection.totalEstimatedWeight && collection.totalEstimatedWeight > 10000) {
+      return throwError(() => new Error('Le poids total ne doit pas dépasser 10kg'));
+    }
+
     // Vérifier le nombre de collectes en attente
     return this.getPendingCollections().pipe(
-      map((collections) => {
-        if (collections.length >= 3) {
-          throw new Error('Vous avez déjà 3 demandes de collecte en attente');
-        }
+      switchMap(collections => {
+        const pendingCollections = collections.filter(c => 
+          c.customerEmail === currentUser.email && 
+          c.status === 'PENDING'
+        );
 
-        // Vérifier le poids total
-        if (collection.totalEstimatedWeight > 10000) {
-          // 10kg en grammes
-          throw new Error('Le poids total ne doit pas dépasser 10kg');
+        if (pendingCollections.length >= 3) {
+          return throwError(() => new Error('Vous avez déjà 3 demandes de collecte en attente'));
         }
 
         const newCollection: Collection = {
-          ...collection,
+          ...collection as Collection,
           customerEmail: currentUser.email,
           status: 'PENDING',
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
-        return newCollection;
-      }),
-      switchMap((newCollection) =>
-        this.indexedDB.add('collections', newCollection)
-      )
+        return this.storageService.saveCollection(newCollection);
+      })
     );
   }
 
@@ -69,23 +68,10 @@ export class CollectionService {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    return this.indexedDB
-      .getAllFromIndex<Collection>('collections', 'status', 'PENDING')
-      .pipe(
-        map((collections) => {
-          if (currentUser.role === 'COLLECTOR') {
-            // Pour les collecteurs, filtrer par ville
-            return collections.filter(
-              (c) => c.address.city === currentUser.address.city
-            );
-          } else {
-            // Pour les particuliers, filtrer par email
-            return collections.filter(
-              (c) => c.customerEmail === currentUser.email
-            );
-          }
-        })
-      );
+    return this.storageService.getPendingCollections(
+      currentUser.email,
+      currentUser.role === 'COLLECTOR'
+    );
   }
 
   updateCollectionStatus(
@@ -93,7 +79,7 @@ export class CollectionService {
     status: CollectionStatus,
     data?: Partial<Collection>
   ): Observable<Collection> {
-    return this.indexedDB.get<Collection>('collections', collectionId).pipe(
+    return this.storageService.getCollection(collectionId).pipe(
       switchMap((collection) => {
         if (!collection) {
           return throwError(() => new Error('Collection not found'));
@@ -107,7 +93,7 @@ export class CollectionService {
           ...(status === 'COMPLETED' && { completedAt: new Date() }),
         };
 
-        return this.indexedDB.put('collections', updatedCollection).pipe(
+        return this.storageService.saveCollection(updatedCollection).pipe(
           tap(() => {
             // Si la collecte est terminée, mettre à jour les points du client
             if (status === 'COMPLETED' && updatedCollection.totalActualWeight) {
@@ -129,28 +115,46 @@ export class CollectionService {
     }, 0);
 
     // Mettre à jour les points de l'utilisateur
-    this.indexedDB
-      .get<User>('users', collection.customerEmail)
-      .pipe(
-        map((user) => {
-          if (!user) throw new Error('User not found');
-          return {
-            ...user,
-            points: (user.points || 0) + Math.floor(totalPoints),
-          };
-        }),
-        switchMap((updatedUser) => this.indexedDB.put('users', updatedUser))
-      )
+    this.storageService.getUser(collection.customerEmail).pipe(
+      map((user) => {
+        if (!user) throw new Error('User not found');
+        return {
+          ...user,
+          points: (user.points || 0) + Math.floor(totalPoints),
+        };
+      }),
+      switchMap((updatedUser) => this.storageService.saveUser(updatedUser))
+    )
       .subscribe();
   }
 
   getCollection(id: string): Observable<Collection> {
-    return this.indexedDB.get<Collection>('collections', id).pipe(
+    return this.storageService.getCollection(id).pipe(
       map(collection => {
         if (!collection) {
           throw new Error('Collection not found');
         }
         return collection;
+      })
+    );
+  }
+
+  deleteCollection(id: string): Observable<void> {
+    return this.storageService.deleteCollection(id);
+  }
+
+  updateCollection(id: string, collection: Partial<Collection>): Observable<Collection> {
+    return this.storageService.getCollection(id).pipe(
+      switchMap(existingCollection => {
+        if (!existingCollection) {
+          return throwError(() => new Error('Collection not found'));
+        }
+        const updatedCollection = {
+          ...existingCollection,
+          ...collection,
+          updatedAt: new Date()
+        };
+        return this.storageService.saveCollection(updatedCollection);
       })
     );
   }

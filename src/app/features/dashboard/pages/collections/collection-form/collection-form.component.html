@@ -59,13 +59,20 @@
             <button
               type="button"
               (click)="removeWasteItem(i)"
-              class="text-red-600 hover:text-red-800"
+              class="inline-flex items-center px-2 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               [disabled]="wasteItems.length === 1"
             >
-              Supprimer
+            <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
+            </svg>
+            
             </button>
           </div>
         </div>
+      </div>
+
+      <div *ngIf="wasteItems.errors?.['totalWeightExceeded']" class="mt-2 text-sm text-red-600">
+        Le poids total ne doit pas dépasser 10kg
       </div>
     </div>
 
@@ -144,7 +151,7 @@
     </div>
 
     <!-- Message d'erreur -->
-    <div *ngIf="error" class="rounded-md bg-red-50 p-4">
+    <div *ngIf="error$ | async as error" class="rounded-md bg-red-50 p-4">
       <div class="flex">
         <div class="flex-shrink-0">
           <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -168,10 +175,10 @@
       </button>
       <button
         type="submit"
-        [disabled]="loading || collectionForm.invalid"
+        [disabled]="(loading$ | async) || collectionForm.invalid"
         class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
       >
-        {{ loading ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Créer') }}
+        {{ (loading$ | async) ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Créer') }}
       </button>
     </div>
   </form>

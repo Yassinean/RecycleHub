@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { CollectionService } from '../../../../core/services/collection.service';
-import { AuthService } from '../../../../core/services/auth.service';
-import { Collection } from '../../../../core/models/collection.model';
-import { User } from '../../../../core/models/user.model';
+import { Router, RouterModule } from '@angular/router';
+import { Store } from '@ngrx/store';
+import * as CollectionActions from '../../../../core/store/actions/collection.actions';
+import { selectCollections, selectCollectionsLoading, selectCollectionsError } from '../../../../core/store/selectors/collection.selectors';
+import { selectAuthUser } from '../../../../core/store/selectors/auth.selectors';
+import { map, withLatestFrom } from 'rxjs';
 
 @Component({
   selector: 'app-collections',
@@ -13,32 +14,34 @@ import { User } from '../../../../core/models/user.model';
   templateUrl: './collections.component.html'
 })
 export class CollectionsComponent implements OnInit {
-  collections: Collection[] = [];
-  currentUser: User | null = null;
-  loading = true;
-  error = '';
+  collections$ = this.store.select(selectCollections);
+  currentUser$ = this.store.select(selectAuthUser);
+  loading$ = this.store.select(selectCollectionsLoading);
+  error$ = this.store.select(selectCollectionsError);
 
-  constructor(
-    private collectionService: CollectionService,
-    private authService: AuthService
-  ) {}
+  constructor(private store: Store, private router: Router) {}
 
   ngOnInit(): void {
-    this.currentUser = this.authService.getCurrentUser();
-    this.loadCollections();
+    this.store.dispatch(CollectionActions.loadCollections());
   }
 
-  private loadCollections(): void {
-    this.loading = true;
-    this.collectionService.getPendingCollections().subscribe({
-      next: (collections) => {
-        this.collections = collections;
-        this.loading = false;
-      },
-      error: (error) => {
-        this.error = error.message;
-        this.loading = false;
-      }
-    });
+  onEditCollection(id: string | undefined) {
+    if (!id) return;
+    this.router.navigate(['/dashboard/collections/edit', id]);
   }
+
+  onDeleteCollection(id: string | undefined) {
+    if (!id) return;
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette collecte ?')) {
+      this.store.dispatch(CollectionActions.deleteCollection({ id }));
+    }
+  }
+
+  canModify$ = this.currentUser$.pipe(
+    withLatestFrom(this.collections$),
+    map(([user, collections]) => collections.map(collection => 
+      user?.email === collection?.customerEmail && 
+      collection?.status === 'PENDING'
+    ))
+  );
 } 

@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
-import { User } from '../../../../core/models/user.model';
-import { IndexedDBService } from '../../../../core/services/indexed-db.service';
 import { DEFAULT_PROFILE_IMAGE } from '../../../../core/constants/default-profile';
+import { Store } from '@ngrx/store';
+import * as AuthActions from '../../../../core/store/actions/auth.actions';
+import { selectAuthError, selectAuthLoading } from '../../../../core/store/selectors/auth.selectors';
 
 @Component({
   selector: 'app-register',
@@ -15,9 +16,9 @@ import { DEFAULT_PROFILE_IMAGE } from '../../../../core/constants/default-profil
 })
 export class RegisterComponent {
   registerForm: FormGroup;
-  loading = false;
+  loading$ = this.store.select(selectAuthLoading);
+  error$ = this.store.select(selectAuthError);
   submitted = false;
-  error = '';
   imagePreview: string | null = null;
   DEFAULT_PROFILE_IMAGE = DEFAULT_PROFILE_IMAGE;
 
@@ -25,13 +26,9 @@ export class RegisterComponent {
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private indexedDB: IndexedDBService
+    private store: Store
   ) {
     // Réinitialiser la base de données pour les tests
-    this.indexedDB.deleteDatabase().then(() => {
-      console.log('Database reset completed');
-    });
-    
     this.registerForm = this.formBuilder.group({
       email: ['', [
         Validators.required,
@@ -78,13 +75,12 @@ export class RegisterComponent {
   onFileSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
-      // Vérifier le type et la taille du fichier
       if (!file.type.startsWith('image/')) {
-        this.error = 'Veuillez sélectionner une image';
+        this.store.dispatch(AuthActions.registerFailure({ error: 'Veuillez sélectionner une image' }));
         return;
       }
-      if (file.size > 5000000) { // 5MB max
-        this.error = 'L\'image ne doit pas dépasser 5MB';
+      if (file.size > 5000000) {
+        this.store.dispatch(AuthActions.registerFailure({ error: 'L\'image ne doit pas dépasser 5MB' }));
         return;
       }
 
@@ -101,42 +97,20 @@ export class RegisterComponent {
 
   onSubmit() {
     this.submitted = true;
-    this.error = '';
 
     if (this.registerForm.invalid) {
       return;
     }
 
-    this.loading = true;
-    
-    const userData: User = {
-      email: this.registerForm.value.email,
-      password: this.registerForm.value.password,
-      firstName: this.registerForm.value.firstName,
-      lastName: this.registerForm.value.lastName,
-      phoneNumber: this.registerForm.value.phoneNumber,
+    const userData = {
+      ...this.registerForm.value,
       dateOfBirth: new Date(this.registerForm.value.dateOfBirth),
-      address: {
-        street: this.registerForm.value.address.street,
-        city: this.registerForm.value.address.city,
-        postalCode: this.registerForm.value.address.postalCode
-      },
-      profilePicture: this.registerForm.value.profilePicture || DEFAULT_PROFILE_IMAGE,
+      profilePicture: this.imagePreview || DEFAULT_PROFILE_IMAGE,
       role: 'CUSTOMER',
       points: 0
     };
 
-    this.authService.register(userData).subscribe({
-      next: () => {
-        this.router.navigate(['/auth/login'], {
-          queryParams: { registered: true }
-        });
-      },
-      error: (error) => {
-        this.error = error.message || 'Une erreur est survenue';
-        this.loading = false;
-      }
-    });
+    this.store.dispatch(AuthActions.register({ user: userData }));
   }
 
   // Validateur pour l'âge minimum

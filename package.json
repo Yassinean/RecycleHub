@@ -21,6 +21,7 @@
     "@ngrx/effects": "^17.0.0",
     "@ngrx/store": "^17.0.0",
     "bcryptjs": "^2.4.3",
+    "ngrx-store-localstorage": "^17.0.0",
     "recyclehub": "file:",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

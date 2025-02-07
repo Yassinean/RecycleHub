@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../../../core/services/auth.service';
+import { RouterModule } from '@angular/router';
+import { Store } from '@ngrx/store';
+import * as AuthActions from '../../../../core/store/actions/auth.actions';
+import { selectAuthError, selectAuthLoading } from '../../../../core/store/selectors/auth.selectors';
 
 @Component({
   selector: 'app-login',
@@ -12,15 +14,13 @@ import { AuthService } from '../../../../core/services/auth.service';
 })
 export class LoginComponent {
   loginForm: FormGroup;
-  loading = false;
+  loading$ = this.store.select(selectAuthLoading);
+  error$ = this.store.select(selectAuthError);
   submitted = false;
-  error = '';
 
   constructor(
     private formBuilder: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private route: ActivatedRoute
+    private store: Store
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
@@ -34,24 +34,12 @@ export class LoginComponent {
 
   onSubmit() {
     this.submitted = true;
-    this.error = '';
-
+  
     if (this.loginForm.invalid) {
       return;
     }
-
-    this.loading = true;
+  
     const { email, password } = this.loginForm.value;
-
-    this.authService.login(email, password).subscribe({
-      next: () => {
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-        this.router.navigate([returnUrl]);
-      },
-      error: (error) => {
-        this.error = error.message || 'Une erreur est survenue';
-        this.loading = false;
-      }
-    });
+    this.store.dispatch(AuthActions.login({ email, password }));
   }
 } 

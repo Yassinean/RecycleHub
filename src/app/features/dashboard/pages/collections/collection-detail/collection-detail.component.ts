@@ -3,9 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
 import { Collection } from '../../../../../core/models/collection.model';
-import { CollectionService } from '../../../../../core/services/collection.service';
-import { AuthService } from '../../../../../core/services/auth.service';
-import { User } from '../../../../../core/models/user.model';
+import { Store } from '@ngrx/store';
+import * as CollectionActions from '../../../../../core/store/actions/collection.actions';
+import { selectSelectedCollection, selectCollectionsLoading, selectCollectionsError } from '../../../../../core/store/selectors/collection.selectors';
+import { selectAuthUser } from '../../../../../core/store/selectors/auth.selectors';
+import { withLatestFrom, take, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-collection-detail',
@@ -14,18 +17,17 @@ import { User } from '../../../../../core/models/user.model';
   templateUrl: './collection-detail.component.html'
 })
 export class CollectionDetailComponent implements OnInit {
-  collection: Collection | null = null;
-  currentUser: User | null = null;
-  loading = true;
-  error = '';
+  collection$ = this.store.select(selectSelectedCollection);
+  currentUser$ = this.store.select(selectAuthUser);
+  loading$ = this.store.select(selectCollectionsLoading);
+  error$ = this.store.select(selectCollectionsError);
   actualWeightForm: FormGroup;
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private collectionService: CollectionService,
-    private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private store: Store,
+    private router: Router
   ) {
     this.actualWeightForm = this.fb.group({
       wasteItems: this.fb.array([])
@@ -33,26 +35,8 @@ export class CollectionDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.currentUser = this.authService.getCurrentUser();
     const id = this.route.snapshot.params['id'];
-    this.loadCollection(id);
-  }
-
-  private loadCollection(id: string) {
-    this.loading = true;
-    this.collectionService.getCollection(id).subscribe({
-      next: (collection) => {
-        this.collection = collection;
-        if (collection.status === 'IN_PROGRESS') {
-          this.initializeActualWeightForm(collection);
-        }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.error = error.message;
-        this.loading = false;
-      }
-    });
+    this.store.dispatch(CollectionActions.loadCollection({ id }));
   }
 
   private initializeActualWeightForm(collection: Collection) {
@@ -72,81 +56,89 @@ export class CollectionDetailComponent implements OnInit {
     });
   }
 
-  onAcceptCollection() {
-    if (!this.collection?.id) return;
-
-    this.loading = true;
-    this.collectionService
-      .updateCollectionStatus(this.collection.id, 'IN_PROGRESS', {
-        collectorEmail: this.currentUser?.email
-      })
-      .subscribe({
-        next: () => {
-          this.loadCollection(this.collection!.id!);
-        },
-        error: (error) => {
-          this.error = error.message;
-          this.loading = false;
+  onAcceptCollection(collectionId: string | undefined) {
+    if (!collectionId) return;
+    
+    this.currentUser$.pipe(take(1)).subscribe(user => {
+      this.store.dispatch(CollectionActions.updateCollectionStatus({
+        id: collectionId,
+        status: 'IN_PROGRESS',
+        data: {
+          collectorEmail: user?.email
         }
-      });
+      }));
+    });
   }
 
-  onRejectCollection() {
-    if (!this.collection) return;
-
-    this.loading = true;
-    this.collectionService
-      .updateCollectionStatus(this.collection.id!, 'REJECTED')
-      .subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard/collections']);
-        },
-        error: (error) => {
-          this.error = error.message;
-          this.loading = false;
-        }
-      });
+  onRejectCollection(collectionId: string | undefined) {
+    if (!collectionId) return;
+    
+    this.store.dispatch(CollectionActions.updateCollectionStatus({
+      id: collectionId,
+      status: 'REJECTED'
+    }));
   }
 
-  onCompleteCollection() {
-    if (!this.collection || this.actualWeightForm.invalid) return;
+  onCompleteCollection(collectionId: string | undefined) {
+    if (!collectionId || this.actualWeightForm.invalid) return;
 
-    this.loading = true;
     const formValue = this.actualWeightForm.value;
     const totalActualWeight = formValue.wasteItems.reduce(
       (total: number, item: any) => total + item.actualWeight,
       0
     );
 
-    this.collectionService
-      .updateCollectionStatus(this.collection.id!, 'COMPLETED', {
+    this.store.dispatch(CollectionActions.updateCollectionStatus({
+      id: collectionId,
+      status: 'COMPLETED',
+      data: {
         wasteItems: formValue.wasteItems,
         totalActualWeight
-      })
-      .subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard/collections']);
-        },
-        error: (error) => {
-          this.error = error.message;
-          this.loading = false;
-        }
-      });
+      }
+    }));
   }
 
-  canAccept(): boolean {
-    return (
-      this.currentUser?.role === 'COLLECTOR' &&
-      this.collection?.status === 'PENDING' &&
-      !this.collection.collectorEmail
+  canAccept(): Observable<boolean> {
+    return this.currentUser$.pipe(
+      withLatestFrom(this.collection$),
+      map(([user, collection]) => 
+        user?.role === 'COLLECTOR' &&
+        collection?.status === 'PENDING' &&
+        !collection.collectorEmail
+      ),
+      take(1)
     );
   }
 
-  canComplete(): boolean {
-    return (
-      this.currentUser?.role === 'COLLECTOR' &&
-      this.collection?.status === 'IN_PROGRESS' &&
-      this.collection.collectorEmail === this.currentUser.email
+  canComplete(): Observable<boolean> {
+    return this.currentUser$.pipe(
+      withLatestFrom(this.collection$),
+      map(([user, collection]) => 
+        user?.role === 'COLLECTOR' &&
+        collection?.status === 'IN_PROGRESS' &&
+        collection.collectorEmail === user.email
+      ),
+      take(1)
     );
+  }
+
+  canModify$ = this.currentUser$.pipe(
+    withLatestFrom(this.collection$),
+    map(([user, collection]) => 
+      user?.email === collection?.customerEmail && 
+      collection?.status === 'PENDING'
+    )
+  );
+
+  onEditCollection(id: string | undefined) {
+    if (!id) return;
+    this.router.navigate(['/dashboard/collections/edit', id]);
+  }
+
+  onDeleteCollection(id: string | undefined) {
+    if (!id) return;
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette collecte ?')) {
+      this.store.dispatch(CollectionActions.deleteCollection({ id }));
+    }
   }
 } 

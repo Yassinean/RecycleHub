@@ -5,6 +5,10 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { Collection, WasteType } from '../../../../../core/models/collection.model';
 import { CollectionService } from '../../../../../core/services/collection.service';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { Store } from '@ngrx/store';
+import * as CollectionActions from '../../../../../core/store/actions/collection.actions';
+import { selectCollectionsLoading, selectCollectionsError } from '../../../../../core/store/selectors/collection.selectors';
+import { selectAuthUser } from '../../../../../core/store/selectors/auth.selectors';
 
 @Component({
   selector: 'app-collection-form',
@@ -14,8 +18,9 @@ import { AuthService } from '../../../../../core/services/auth.service';
 })
 export class CollectionFormComponent implements OnInit {
   collectionForm: FormGroup;
-  loading = false;
-  error = '';
+  loading$ = this.store.select(selectCollectionsLoading);
+  error$ = this.store.select(selectCollectionsError);
+  currentUser$ = this.store.select(selectAuthUser);
   isEditMode = false;
   collectionId?: string;
   today = new Date();
@@ -32,10 +37,15 @@ export class CollectionFormComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private collectionService: CollectionService,
-    private authService: AuthService
+    private authService: AuthService,
+    private store: Store
   ) {
     this.collectionForm = this.fb.group({
-      wasteItems: this.fb.array([], [Validators.required, Validators.minLength(1)]),
+      wasteItems: this.fb.array([], [
+        Validators.required, 
+        Validators.minLength(1),
+        this.totalWeightValidator()
+      ]),
       scheduledDate: ['', [
         Validators.required,
         this.futureDateValidator()
@@ -93,6 +103,17 @@ export class CollectionFormComponent implements OnInit {
     };
   }
 
+  private totalWeightValidator(): ValidatorFn {
+    return (formArray: AbstractControl): ValidationErrors | null => {
+      const wasteItems = formArray as FormArray;
+      const totalWeight = wasteItems.controls.reduce((total, control) => {
+        return total + Number(control.get('estimatedWeight')?.value || 0);
+      }, 0);
+
+      return totalWeight > 10000 ? { totalWeightExceeded: true } : null;
+    };
+  }
+
   addWasteItem() {
     const wasteItem = this.fb.group({
       type: ['PLASTIC', Validators.required],
@@ -112,9 +133,13 @@ export class CollectionFormComponent implements OnInit {
   }
 
   private loadCollection(id: string) {
-    this.loading = true;
     this.collectionService.getCollection(id).subscribe({
       next: (collection) => {
+        if (!collection) {
+          this.router.navigate(['/dashboard/collections']);
+          return;
+        }
+
         // Vider le FormArray existant
         while (this.wasteItems.length) {
           this.wasteItems.removeAt(0);
@@ -125,7 +150,11 @@ export class CollectionFormComponent implements OnInit {
           this.wasteItems.push(
             this.fb.group({
               type: [item.type, Validators.required],
-              estimatedWeight: [item.estimatedWeight, [Validators.required, Validators.min(100), Validators.max(10000)]]
+              estimatedWeight: [item.estimatedWeight, [
+                Validators.required, 
+                Validators.min(100), 
+                Validators.max(10000)
+              ]]
             })
           );
         });
@@ -142,13 +171,8 @@ export class CollectionFormComponent implements OnInit {
           address: collection.address,
           notes: collection.notes
         });
-
-        this.loading = false;
       },
-      error: (error) => {
-        this.error = error.message;
-        this.loading = false;
-        // Rediriger vers la liste en cas d'erreur
+      error: () => {
         this.router.navigate(['/dashboard/collections']);
       }
     });
@@ -159,12 +183,9 @@ export class CollectionFormComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
     const formValue = this.collectionForm.value;
-
-    // Calculer le poids total estimé
     const totalEstimatedWeight = formValue.wasteItems.reduce(
-      (total: number, item: any) => total + item.estimatedWeight,
+      (total: number, item: any) => total + Number(item.estimatedWeight),
       0
     );
 
@@ -174,18 +195,15 @@ export class CollectionFormComponent implements OnInit {
       scheduledDate: new Date(formValue.scheduledDate)
     };
 
-    const request = this.isEditMode
-      ? this.collectionService.updateCollectionStatus(this.collectionId!, 'PENDING', collectionData)
-      : this.collectionService.createCollection(collectionData);
-
-    request.subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard/collections']);
-      },
-      error: (error) => {
-        this.error = error.message;
-        this.loading = false;
-      }
-    });
+    if (this.isEditMode && this.collectionId) {
+      this.store.dispatch(CollectionActions.updateCollection({
+        id: this.collectionId,
+        collection: collectionData
+      }));
+    } else {
+      this.store.dispatch(CollectionActions.createCollection({
+        collection: collectionData
+      }));
+    }
   }
 } 

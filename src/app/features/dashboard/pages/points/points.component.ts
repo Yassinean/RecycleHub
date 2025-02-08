@@ -20,21 +20,24 @@ export class PointsComponent implements OnInit {
   completedCollections$ = this.store.select(selectCollections).pipe(
     map(collections => 
       collections
-        .filter(c => c.status === 'COMPLETED')
+        .filter(c => 
+          c.status === 'COMPLETED' && 
+          c.customerEmail === this.authService.getCurrentUser()?.email
+        )
         .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
     )
   );
 
   voucherOptions = VOUCHER_OPTIONS;
 
-  private readonly POINTS_PER_KG: Record<string, number> = {
+  readonly POINTS_PER_KG = {
     PLASTIC: 2,
     GLASS: 1,
     PAPER: 1,
     METAL: 5,
   };
 
-  currentPoints = 0;
+  availablePoints = 0;  // Points disponibles pour la conversion
 
   constructor(
     private store: Store,
@@ -42,11 +45,13 @@ export class PointsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Mettre à jour les points disponibles quand l'utilisateur change
     this.currentUser$.subscribe(user => {
-      this.currentPoints = user?.points || 0;
+      this.availablePoints = user?.points || 0;
     });
   }
 
+  // Calcul des points pour une collection
   calculatePoints(collection: Collection): number {
     return collection.wasteItems.reduce((total, item) => {
       if (item.actualWeight) {
@@ -56,8 +61,9 @@ export class PointsComponent implements OnInit {
     }, 0);
   }
 
+  // Vérifier si on peut convertir un certain nombre de points
   canConvert(points: number): boolean {
-    return this.currentPoints >= points;
+    return this.availablePoints >= points;
   }
 
   convertPoints(option: VoucherOption) {
@@ -93,7 +99,7 @@ export class PointsComponent implements OnInit {
     });
   }
 
-  // Pour le total des points gagnés
+  // Total des points gagnés (historique)
   getTotalPointsEarned(): number {
     let total = 0;
     this.completedCollections$.subscribe(collections => {
@@ -106,6 +112,6 @@ export class PointsComponent implements OnInit {
 
   // Pour vérifier si l'utilisateur peut convertir des points
   get hasEnoughPoints(): boolean {
-    return this.currentPoints >= Math.min(...VOUCHER_OPTIONS.map(v => v.points));
+    return this.availablePoints >= Math.min(...VOUCHER_OPTIONS.map(v => v.points));
   }
 } 

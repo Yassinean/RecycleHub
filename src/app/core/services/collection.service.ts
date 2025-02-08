@@ -15,10 +15,10 @@ import { User } from '../models/user.model';
 })
 export class CollectionService {
   private readonly POINTS_PER_KG: Record<WasteType, number> = {
-    'PLASTIC': 10,  // 10 points par kg de plastique
-    'GLASS': 5,    // 5 points par kg de verre
-    'PAPER': 3,    // 3 points par kg de papier
-    'METAL': 15    // 15 points par kg de métal
+    PLASTIC: 2,
+    GLASS: 1,
+    PAPER: 1,
+    METAL: 5,
   };
 
   constructor(
@@ -220,6 +220,12 @@ export class CollectionService {
         }
         return collections;
       })
+    );
+  }
+
+  getPendingCollectionsCount(): Observable<number> {
+    return this.getPendingCollections().pipe(
+      map(collections => collections.filter(collection => collection.status === 'PENDING').length)
     );
   }
 }

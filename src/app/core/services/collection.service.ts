@@ -228,4 +228,41 @@ export class CollectionService {
       map(collections => collections.filter(collection => collection.status === 'PENDING').length)
     );
   }
+
+  getCompletedCollections(): Observable<Collection[]> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      return throwError(() => new Error('User not authenticated'));
+    }
+
+    console.log('Current user:', currentUser); // Debug log
+
+    return this.storageService.getCompletedCollection(
+      currentUser.email,
+      currentUser.role === 'COLLECTOR'
+    ).pipe(
+      map(collections => {
+        console.log('Collections before filter:', collections); // Debug log
+
+        if (currentUser.role === 'COLLECTOR' && currentUser.address?.city) {
+          const collectorCity = currentUser.address.city.toLowerCase();
+          const filtered = collections.filter(collection => 
+            collection.address.city.toLowerCase() === collectorCity
+          );
+          console.log('Filtered collections:', filtered); // Debug log
+          console.log('cities :', currentUser.address.city); // Debug log
+          return filtered;
+        }
+        return collections;
+      })
+    );
+  }
+
+
+
+  getCompletedCollectionsCount(): Observable<number> {
+    return this.getCompletedCollections().pipe(
+      map(collections => collections.filter(collection => collection.status === 'COMPLETED').length)
+    );
+  } 
 }

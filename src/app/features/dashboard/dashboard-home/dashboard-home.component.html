@@ -93,7 +93,7 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-2xl font-semibold text-gray-900">
-                    0
+                    {{pendingCollectionsCount() | async}}
                   </div>
                 </dd>
               </dl>
@@ -124,7 +124,7 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-2xl font-semibold text-gray-900">
-                    0
+                    {{completedCollectionsCount() | async}}
                   </div>
                 </dd>
               </dl>

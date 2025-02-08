@@ -25,5 +25,9 @@ export class DashboardHomeComponent implements OnInit {
     return this.collectionService.getPendingCollectionsCount();
   }
 
+  completedCollectionsCount() {
+    return this.collectionService.getCompletedCollectionsCount();
+  }
+
   
 } 

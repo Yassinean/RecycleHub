@@ -92,6 +92,16 @@ export class StorageService {
     return of(filtered);
   }
 
+  getCompletedCollection(userEmail: string , isCollector:boolean){
+    const collections = this.getCollections();
+    let filtred = collections;
+
+    if(isCollector){
+      filtred = collections.filter(c => c.status === 'COMPLETED')
+    }
+    return of(filtred);
+  }
+
   private initializeCollector() {
     const collector = {
       email: 'collector@recycling.com',

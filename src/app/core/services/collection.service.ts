@@ -15,10 +15,10 @@ import { User } from '../models/user.model';
 })
 export class CollectionService {
   private readonly POINTS_PER_KG: Record<WasteType, number> = {
-    PLASTIC: 2,
-    GLASS: 1,
-    PAPER: 1,
-    METAL: 5,
+    'PLASTIC': 10,  // 10 points par kg de plastique
+    'GLASS': 5,    // 5 points par kg de verre
+    'PAPER': 3,    // 3 points par kg de papier
+    'METAL': 15    // 15 points par kg de métal
   };
 
   constructor(
@@ -146,18 +146,16 @@ export class CollectionService {
 
     // Mettre à jour les points de l'utilisateur
     this.storageService.getUser(collection.customerEmail).pipe(
-      map((user) => {
+      map(user => {
         if (!user) throw new Error('User not found');
         return {
           ...user,
-          points: (user.points || 0) + Math.floor(totalPoints),
+          points: (user.points || 0) + Math.floor(totalPoints)
         };
       }),
-      switchMap((updatedUser) => this.storageService.saveUser(updatedUser))
-    )
-      .subscribe();
+      switchMap(updatedUser => this.storageService.saveUser(updatedUser))
+    ).subscribe();
   }
-
 
   updateCollectionStatus(id: string, status: CollectionStatus, data?: any): Observable<Collection> {
     const currentUser = this.authService.getCurrentUser();
@@ -176,14 +174,20 @@ export class CollectionService {
           status,
           collectorEmail: status === 'OCCUPIED' ? currentUser.email : collection.collectorEmail,
           updatedAt: new Date(),
-          ...(status === 'COMPLETED' && { completedAt: new Date() }),
+          ...(status === 'COMPLETED' && { 
+            completedAt: new Date(),
+            ...data 
+          }),
           ...(status === 'REJECTED' && { rejectionReason: data?.rejectionReason }),
           ...(data || {})
         };
 
         return this.storageService.saveCollection(updatedCollection).pipe(
           tap(() => {
-            console.log('Collection updated:', updatedCollection);
+            // Calculer et attribuer les points si la collecte est validée
+            if (status === 'COMPLETED' && updatedCollection.wasteItems) {
+              this.updateCustomerPoints(updatedCollection);
+            }
           })
         );
       })
@@ -218,5 +222,4 @@ export class CollectionService {
       })
     );
   }
-  
 }

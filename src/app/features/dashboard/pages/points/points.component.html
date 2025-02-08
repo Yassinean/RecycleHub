@@ -1,79 +1,70 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div class="bg-white shadow rounded-lg p-6 mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">Mes points</h2>
-    <div class="text-4xl font-bold text-green-600">
-      {{ (currentUser$ | async)?.points || 0 }} points
-    </div>
-  </div>
-
-  <div class="bg-white shadow rounded-lg p-6 mb-6">
-    <h3 class="text-lg font-medium text-gray-900 mb-4">Convertir mes points</h3>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div
-        *ngFor="let option of voucherOptions"
-        class="border rounded-lg p-4 flex flex-col items-center justify-between"
-        [class.opacity-50]="!canConvert(option.points)"
-      >
-        <div class="text-center mb-4">
-          <div class="text-lg font-medium text-gray-900">
-            {{ option.label }}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Carte des points -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            Mes points de recyclage
+          </h3>
+          <div class="mt-2 text-3xl font-semibold text-green-600">
+            {{ currentPoints }} points
           </div>
-          <div class="text-sm text-gray-500">{{ option.points }} points</div>
         </div>
-        <button
-          (click)="convertPoints(option)"
-          [disabled]="!canConvert(option.points)"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Convertir
-        </button>
       </div>
-    </div>
-  </div>
 
-  <div class="bg-white shadow rounded-lg p-6">
-    <h3 class="text-lg font-medium text-gray-900 mb-4">
-      Historique des points
-    </h3>
+      <!-- Options de conversion -->
+      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div *ngFor="let option of voucherOptions" 
+             class="relative rounded-lg border p-4"
+             [class.border-green-200]="canConvert(option.points)"
+             [class.border-gray-200]="!canConvert(option.points)">
+          <h4 class="text-lg font-medium" [ngClass]="getPointsClass(option.points)">
+            {{ option.points }} points
+          </h4>
+          <p class="mt-1 text-sm text-gray-500">{{ option.label }}</p>
+          <button
+            (click)="convertPoints(option)"
+            [disabled]="!canConvert(option.points)"
+            [ngClass]="getButtonClass(option.points)"
+            class="mt-4 w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            Convertir
+          </button>
+        </div>
+      </div>
 
-    <div class="flow-root">
-      <ul role="list" class="-mb-8">
-        <li *ngFor="let collection of completedCollections$ | async">
-          <div class="relative pb-8">
-            <div class="relative flex space-x-3">
+      <!-- Historique des points -->
+      <div class="mt-8">
+        <h4 class="text-base font-medium text-gray-900">Historique des points</h4>
+        <div class="mt-4 space-y-4">
+          <div *ngFor="let collection of completedCollections$ | async" 
+               class="border-t border-gray-200 pt-4">
+            <div class="flex justify-between items-center">
               <div>
-                <span
-                  class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white"
-                >
-                  <svg
-                    class="h-5 w-5 text-white"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-900">
+                <p class="text-sm font-medium text-gray-900">
                   Collecte #{{ collection.id }}
-                </div>
-                <div class="mt-1 text-sm text-gray-500">
-                  <span>{{
-                    collection.completedAt | date : "dd/MM/yyyy"
-                  }}</span>
-                  <span class="mx-2">•</span>
-                  <span>+{{ calculatePoints(collection) }} points</span>
-                </div>
+                </p>
+                <p class="text-sm text-gray-500">
+                  {{ formatDate(collection.completedAt) }}
+                </p>
+              </div>
+              <div class="text-sm font-medium text-green-600">
+                +{{ calculatePoints(collection) | number:'1.0-0' }} points
               </div>
             </div>
           </div>
-        </li>
-      </ul>
+        </div>
+      </div>
+
+      <!-- Total des points gagnés -->
+      <div class="mt-6 border-t border-gray-200 pt-4">
+        <div class="flex justify-between items-center">
+          <p class="text-sm font-medium text-gray-900">Total des points gagnés</p>
+          <p class="text-sm font-medium text-green-600">
+            {{ getTotalPointsEarned() | number:'1.0-0' }} points
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -13,8 +13,13 @@ import { User } from '../../../../core/models/user.model';
 export class DashboardLayoutComponent {
   currentUser: User | null = null;
 
+
   constructor(private authService: AuthService, private router: Router) {
     this.currentUser = this.authService.getCurrentUser();
+  }
+
+  getTotalPointsEarned() {
+    return this.authService.getCurrentUser()?.points || 0;
   }
 
   logout() {

@@ -31,7 +31,7 @@
           routerLinkActive="bg-green-50 text-green-600"
           class="block px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          Mes points ({{ currentUser?.points || 0 }})
+          Mes points ({{ getTotalPointsEarned() | number:'1.0-0' }})
         </a>
         <a 
           routerLink="/dashboard/profile" 

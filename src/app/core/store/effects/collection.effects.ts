@@ -115,7 +115,7 @@ export class CollectionEffects {
         withLatestFrom(this.store.select(selectAuthUser)),
         tap(([action, user]) => {
           if (user?.role === 'COLLECTOR') {
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/dashboard/collections']);
           } else {
             this.router.navigate(['/dashboard/collections']);
           }

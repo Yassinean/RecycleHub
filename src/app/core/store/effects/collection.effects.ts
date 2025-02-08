@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { map, mergeMap, catchError, tap } from 'rxjs/operators';
+import { map, mergeMap, catchError, tap, withLatestFrom } from 'rxjs/operators';
 import { CollectionService } from '../../services/collection.service';
 import * as CollectionActions from '../actions/collection.actions';
 import { Collection } from '../../models/collection.model';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { selectAuthUser } from '../../store/selectors/auth.selectors';
 
 @Injectable()
 export class CollectionEffects {
@@ -106,9 +108,26 @@ export class CollectionEffects {
     )
   );
 
+  updateCollectionStatusSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(CollectionActions.updateCollectionSuccess),
+        withLatestFrom(this.store.select(selectAuthUser)),
+        tap(([action, user]) => {
+          if (user?.role === 'COLLECTOR') {
+            this.router.navigate(['/dashboard']);
+          } else {
+            this.router.navigate(['/dashboard/collections']);
+          }
+        })
+      ),
+    { dispatch: false }
+  );
+
   constructor(
     private actions$: Actions,
     private collectionService: CollectionService,
-    private router: Router
+    private router: Router,
+    private store: Store
   ) {}
 } 

@@ -115,11 +115,6 @@ export class CollectionsComponent implements OnInit, OnDestroy {
         collectorEmail: currentUser.email
       }
     }));
-
-    // Recharger les collections après la mise à jour
-    setTimeout(() => {
-      this.store.dispatch(CollectionActions.loadCollections());
-    }, 500);
   }
 
   getStatusClass(status: CollectionStatus): string {

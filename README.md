@@ -83,9 +83,12 @@ ng serve
    - Suivre l'état de la collecte
    - Convertir les points en bons d'achat
 4. Pour les collecteurs :
+   - Pour s'authentifier en tant que collecteur
+        - Pour se connecter à l'application en tant que collecteur (email: collector@recycling.com, password: collector123)
    - Consulter les demandes de collecte
    - Accepter/refuser les collectes
    - Valider les collectes effectuées
+
 
 ## Sécurité
 
@@ -108,7 +111,7 @@ Les contributions sont les bienvenues ! Pour contribuer :
 
 Yassine Hanach - [@Mylinkedin](https://www.linkedin.com/in/yassine-hanach-2073b222a/)
 
-Lien du projet: [https://github.com/Yassinean/RecycleHub](https://github.com/Yassinean/RecycleHub)
+Lien du projet: [https://recycle-hub-tau.vercel.app](https://recycle-hub-tau.vercel.app)
 
 ## Remerciements
 

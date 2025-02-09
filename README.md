@@ -106,7 +106,7 @@ Les contributions sont les bienvenues ! Pour contribuer :
 
 ## Contact
 
-Yassine Hanach - [@votrelinkedin](https://www.linkedin.com/in/yassine-hanach-2073b222a/)
+Yassine Hanach - [@Mylinkedin](https://www.linkedin.com/in/yassine-hanach-2073b222a/)
 
 Lien du projet: [https://github.com/Yassinean/RecycleHub](https://github.com/Yassinean/RecycleHub)
 

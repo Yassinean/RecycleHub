@@ -8,7 +8,7 @@
             Mes points de recyclage
           </h3>
           <div class="mt-2 text-3xl font-semibold text-green-600">
-            {{ getAvailablePoints() }} points disponibles
+            {{ getTotalPointsEarned() | number:'1.0-0' }} points disponibles
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@
       <!-- Ajouter un lien vers la page des bons d'achat -->
       <div class="mt-8 text-center">
         <a
-          routerLink="/dashboard/vouchers"
+          href="/dashboard/vouchers"
           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
         <div class="flex justify-between items-center">
           <p class="text-sm font-medium text-gray-900">Total des points gagnés</p>
           <p class="text-sm font-medium text-green-600">
-            {{ getTotalPointsEarned() | number:'1.0-0' }} points
+            {{ availablePoints | number:'1.0-0' }} points
           </p>
         </div>
       </div>

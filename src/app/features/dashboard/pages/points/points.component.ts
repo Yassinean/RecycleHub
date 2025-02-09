@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { map } from 'rxjs/operators';
+import { map, switchMap, take, takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import { selectCollections } from '../../../../core/store/selectors/collection.selectors';
 import { selectAuthUser } from '../../../../core/store/selectors/auth.selectors';
 import { Collection } from '../../../../core/models/collection.model';
 import { VOUCHER_OPTIONS, VoucherOption } from '../../../../core/models/voucher.model';
-import * as AuthActions from '../../../../core/store/actions/auth.actions';
 import { AuthService } from '../../../../core/services/auth.service';
 import { VoucherService } from '../../../../core/services/voucher.service';
 import { User } from '../../../../core/models/user.model';
@@ -18,16 +18,24 @@ import { User } from '../../../../core/models/user.model';
   imports: [CommonModule],
   templateUrl: './points.component.html'
 })
-export class PointsComponent implements OnInit {
+export class PointsComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   currentUser$ = this.store.select(selectAuthUser);
   completedCollections$ = this.store.select(selectCollections).pipe(
-    map(collections => 
+    map(collections =>
       collections
-        .filter(c => 
-          c.status === 'COMPLETED' && 
+        .filter(c =>
+          c.status === 'COMPLETED' &&
           c.customerEmail === this.authService.getCurrentUser()?.email
         )
         .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+    )
+  );
+
+  totalPointsEarned$ = this.completedCollections$.pipe(
+    map(collections =>
+      collections.reduce((acc, collection) => acc + this.calculatePoints(collection), 0)
     )
   );
 
@@ -50,10 +58,14 @@ export class PointsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Mettre à jour les points disponibles quand l'utilisateur change
-    this.currentUser$.subscribe(user => {
+    this.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.availablePoints = user?.points || 0;
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // Calcul des points pour une collection
@@ -80,65 +92,48 @@ export class PointsComponent implements OnInit {
     }
 
     const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
-
-    const remainingPoints = (currentUser.points || 0) - option.points;
-    if (remainingPoints < 0) {
-      alert('Points insuffisants pour cette conversion');
-      return;
-    }
+    if (!currentUser) { return; }
 
     if (confirm(`Voulez-vous convertir ${option.points} points en ${option.label} ?`)) {
-      // Vérifier si l'utilisateur a déjà un bon d'achat similaire non utilisé
-      this.voucherService.getUserVouchers().subscribe(vouchers => {
-        const existingSimilarVoucher = vouchers.find(v => 
-          v.points === option.points && 
-          v.value === option.value && 
-          !v.isUsed &&
-          new Date(v.expiresAt) > new Date()
-        );
-
-        if (existingSimilarVoucher) {
-          if (confirm('Vous avez déjà un bon d\'achat similaire non utilisé. Voulez-vous quand même en créer un nouveau ?')) {
-            this.createNewVoucher(option, currentUser);
+      this.voucherService.getUserVouchers().pipe(
+        take(1),
+        switchMap(vouchers => {
+          const existingSimilarVoucher = vouchers.find(v =>
+            v.points === option.points &&
+            v.value === option.value &&
+            !v.isUsed &&
+            new Date(v.expiresAt) > new Date()
+          );
+          if (existingSimilarVoucher) {
+            if (!confirm('Vous avez déjà un bon d\'achat similaire non utilisé. Voulez-vous quand même en créer un nouveau ?')) {
+              return of(null);
+            }
           }
-        } else {
-          this.createNewVoucher(option, currentUser);
+          return this.voucherService.createVoucher(option.points, option.value).pipe(take(1));
+        }),
+        switchMap(voucher => {
+          if (!voucher) { return of(null); }
+          // Create a new user object with updated points
+          const updatedUser: User = { ...currentUser, points: (currentUser.points || 0) - option.points };
+          return this.authService.updateUser(updatedUser).pipe(take(1));
+        })
+      ).subscribe({
+        next: () => this.router.navigate(['/dashboard/vouchers']),
+        error: error => {
+          console.error('Erreur lors de la conversion des points:', error);
+          alert('Une erreur est survenue lors de la conversion des points.');
         }
       });
     }
   }
 
-  private createNewVoucher(option: VoucherOption, currentUser: User) {
-    this.voucherService.createVoucher(option.points, option.value).subscribe(
-      (voucher) => {
-        // Mettre à jour les points de l'utilisateur
-        currentUser.points = (currentUser.points || 0) - option.points;
-        this.authService.updateUser(currentUser).subscribe(() => {
-          // Supprimer l'alerte et naviguer directement
-          this.router.navigate(['/dashboard/vouchers']);
-        });
-      },
-      (error) => {
-        console.error('Erreur lors de la conversion des points:', error);
-        alert('Une erreur est survenue lors de la conversion des points.');
-      }
-    );
-  }
-
-  // Méthode pour obtenir le nombre de points disponibles
-  getAvailablePoints(): number {
-    const currentUser = this.authService.getCurrentUser();
-    return currentUser?.points || 0;
-  }
-
-  // Méthodes utilitaires pour le template
+  // Méthode utilitaire pour le template
   getPointsClass(points: number): string {
     return this.canConvert(points) ? 'text-green-600' : 'text-gray-400';
   }
 
   getButtonClass(points: number): string {
-    return this.canConvert(points) 
+    return this.canConvert(points)
       ? 'bg-green-600 hover:bg-green-700 text-white'
       : 'bg-gray-200 text-gray-400 cursor-not-allowed';
   }
@@ -152,19 +147,12 @@ export class PointsComponent implements OnInit {
     });
   }
 
-  // Total des points gagnés (historique)
-  getTotalPointsEarned(): number {
-    let total = 0;
-    this.completedCollections$.subscribe(collections => {
-      total = collections.reduce((acc, collection) => {
-        return acc + this.calculatePoints(collection);
-      }, 0);
-    });
-    return total;
+  // Vérifier si l'utilisateur peut convertir des points
+  get hasEnoughPoints(): boolean {
+    return this.availablePoints >= Math.min(...this.voucherOptions.map(v => v.points));
   }
 
-  // Pour vérifier si l'utilisateur peut convertir des points
-  get hasEnoughPoints(): boolean {
-    return this.availablePoints >= Math.min(...VOUCHER_OPTIONS.map(v => v.points));
+  getTotalPointsEarned() {
+    return this.authService.getCurrentUser()?.points || 0;
   }
-} 
+}

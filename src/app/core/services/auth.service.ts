@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError, of, BehaviorSubject } from 'rxjs';
 import { User } from '../models/user.model';
 import { StorageService } from './storage.service';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -38,7 +38,10 @@ export class AuthService {
         localStorage.setItem(this.USER_KEY, JSON.stringify(userWithoutPassword));
         this.currentUserSubject.next(userWithoutPassword); // Update observable
 
-        return userWithoutPassword;
+        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        this.currentUserSubject.next(user);
+
+        return user;
       })
     );
   }
@@ -50,9 +53,25 @@ export class AuthService {
 
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
+    // const storedUser = localStorage.getItem(this.USER_KEY);
+    // if (storedUser) {
+    //   const user = JSON.parse(storedUser);
+    //   this.currentUserSubject.next(user);
+    //   return user;
+    // }
+    // return null;
   }
 
   isAuthenticated(): boolean {
     return !!this.getCurrentUser();
+  }
+
+  updateUser(user: User): Observable<User> {
+    return this.storageService.saveUser(user).pipe(
+      tap(updatedUser => {
+        localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+        this.currentUserSubject.next(updatedUser);
+      })
+    );
   }
 }

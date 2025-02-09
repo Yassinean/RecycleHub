@@ -80,12 +80,19 @@ export const routes: Routes = [
             .then(m => m.CollectionValidateComponent),
         title: 'Valider la collecte - RecycleHub'
       },
-      // {
-      //   path: 'profile',
-      //   loadComponent: () => 
-      //     import('./features/dashboard/pages/profile/profile.component')
-      //       .then(m => m.ProfileComponent)
-      // },
+      {
+        path: 'vouchers',
+        loadComponent: () => import('./features/dashboard/pages/vouchers/vouchers.component')
+          .then(m => m.VouchersComponent),
+        title: 'Mes bons - RecycleHub'
+      },
+      {
+        path: 'profile',
+        loadComponent: () => 
+          import('./features/dashboard/pages/profile/profile.component')
+            .then(m => m.ProfileComponent),
+        title: 'Profil - RecycleHub'
+      },
       {
         path: 'points',
         loadComponent: () => 

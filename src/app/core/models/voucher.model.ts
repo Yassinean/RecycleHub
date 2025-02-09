@@ -1,3 +1,14 @@
+export interface Voucher {
+  id: string;
+  userId: string;
+  code: string;
+  points: number;
+  value: number;
+  createdAt: Date;
+  expiresAt: Date;
+  isUsed: boolean;
+}
+
 export interface VoucherOption {
   points: number;
   value: number;

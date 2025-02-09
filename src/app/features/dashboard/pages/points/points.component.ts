@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { map } from 'rxjs/operators';
 import { selectCollections } from '../../../../core/store/selectors/collection.selectors';
@@ -8,6 +9,8 @@ import { Collection } from '../../../../core/models/collection.model';
 import { VOUCHER_OPTIONS, VoucherOption } from '../../../../core/models/voucher.model';
 import * as AuthActions from '../../../../core/store/actions/auth.actions';
 import { AuthService } from '../../../../core/services/auth.service';
+import { VoucherService } from '../../../../core/services/voucher.service';
+import { User } from '../../../../core/models/user.model';
 
 @Component({
   selector: 'app-points',
@@ -41,7 +44,9 @@ export class PointsComponent implements OnInit {
 
   constructor(
     private store: Store,
-    private authService: AuthService
+    private authService: AuthService,
+    private voucherService: VoucherService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -63,20 +68,68 @@ export class PointsComponent implements OnInit {
 
   // Vérifier si on peut convertir un certain nombre de points
   canConvert(points: number): boolean {
-    return this.availablePoints >= points;
+    const currentUser = this.authService.getCurrentUser();
+    const currentPoints = currentUser?.points || 0;
+    return currentPoints >= points;
   }
 
   convertPoints(option: VoucherOption) {
     if (!this.canConvert(option.points)) {
+      alert('Points insuffisants pour cette conversion');
+      return;
+    }
+
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    const remainingPoints = (currentUser.points || 0) - option.points;
+    if (remainingPoints < 0) {
+      alert('Points insuffisants pour cette conversion');
       return;
     }
 
     if (confirm(`Voulez-vous convertir ${option.points} points en ${option.label} ?`)) {
-      this.store.dispatch(AuthActions.convertPoints({ 
-        points: option.points,
-        voucher: option
-      }));
+      // Vérifier si l'utilisateur a déjà un bon d'achat similaire non utilisé
+      this.voucherService.getUserVouchers().subscribe(vouchers => {
+        const existingSimilarVoucher = vouchers.find(v => 
+          v.points === option.points && 
+          v.value === option.value && 
+          !v.isUsed &&
+          new Date(v.expiresAt) > new Date()
+        );
+
+        if (existingSimilarVoucher) {
+          if (confirm('Vous avez déjà un bon d\'achat similaire non utilisé. Voulez-vous quand même en créer un nouveau ?')) {
+            this.createNewVoucher(option, currentUser);
+          }
+        } else {
+          this.createNewVoucher(option, currentUser);
+        }
+      });
     }
+  }
+
+  private createNewVoucher(option: VoucherOption, currentUser: User) {
+    this.voucherService.createVoucher(option.points, option.value).subscribe(
+      (voucher) => {
+        // Mettre à jour les points de l'utilisateur
+        currentUser.points = (currentUser.points || 0) - option.points;
+        this.authService.updateUser(currentUser).subscribe(() => {
+          // Supprimer l'alerte et naviguer directement
+          this.router.navigate(['/dashboard/vouchers']);
+        });
+      },
+      (error) => {
+        console.error('Erreur lors de la conversion des points:', error);
+        alert('Une erreur est survenue lors de la conversion des points.');
+      }
+    );
+  }
+
+  // Méthode pour obtenir le nombre de points disponibles
+  getAvailablePoints(): number {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser?.points || 0;
   }
 
   // Méthodes utilitaires pour le template

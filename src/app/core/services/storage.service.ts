@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, from, throwError, of } from 'rxjs';
 import { Collection } from '../models/collection.model';
 import { User } from '../models/user.model';
+import { Voucher } from '../models/voucher.model';
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +10,7 @@ import { User } from '../models/user.model';
 export class StorageService {
   private readonly COLLECTIONS_KEY = 'collections';
   private readonly USERS_KEY = 'users';
+  private readonly VOUCHERS_KEY = 'vouchers';
 
   constructor() {
     this.initializeCollector();
@@ -101,6 +103,22 @@ export class StorageService {
     }
     return of(filtred);
   }
+
+getVouchers(): Voucher[] {
+  return JSON.parse(localStorage.getItem(this.VOUCHERS_KEY) || '[]');
+}
+
+saveVoucher(voucher: Voucher): Observable<Voucher> {
+  const vouchers = this.getVouchers();
+  vouchers.push(voucher);
+  localStorage.setItem(this.VOUCHERS_KEY, JSON.stringify(vouchers));
+  return of(voucher);
+}
+
+getUserVouchers(userEmail: string): Observable<Voucher[]> {
+  const vouchers = this.getVouchers();
+  return of(vouchers.filter(v => v.userId === userEmail));
+}
 
   private initializeCollector() {
     const collector = {

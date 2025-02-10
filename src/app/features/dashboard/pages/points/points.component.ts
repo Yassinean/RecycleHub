@@ -48,7 +48,7 @@ export class PointsComponent implements OnInit, OnDestroy {
     METAL: 5,
   };
 
-  availablePoints = 0;  // Points disponibles pour la conversion
+  availablePoints = 0;
 
   constructor(
     private store: Store,
@@ -68,7 +68,6 @@ export class PointsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // Calcul des points pour une collection
   calculatePoints(collection: Collection): number {
     return collection.wasteItems.reduce((total, item) => {
       if (item.actualWeight) {
@@ -78,7 +77,6 @@ export class PointsComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  // Vérifier si on peut convertir un certain nombre de points
   canConvert(points: number): boolean {
     const currentUser = this.authService.getCurrentUser();
     const currentPoints = currentUser?.points || 0;
@@ -113,7 +111,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         }),
         switchMap(voucher => {
           if (!voucher) { return of(null); }
-          // Create a new user object with updated points
+      
           const updatedUser: User = { ...currentUser, points: (currentUser.points || 0) - option.points };
           return this.authService.updateUser(updatedUser).pipe(take(1));
         })
@@ -127,7 +125,6 @@ export class PointsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Méthode utilitaire pour le template
   getPointsClass(points: number): string {
     return this.canConvert(points) ? 'text-green-600' : 'text-gray-400';
   }
@@ -147,7 +144,6 @@ export class PointsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Vérifier si l'utilisateur peut convertir des points
   get hasEnoughPoints(): boolean {
     return this.availablePoints >= Math.min(...this.voucherOptions.map(v => v.points));
   }

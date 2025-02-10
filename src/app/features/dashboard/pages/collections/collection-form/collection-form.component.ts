@@ -73,7 +73,7 @@ export class CollectionFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Pré-remplir l'adresse avec celle de l'utilisateur
+  
     const currentUser = this.authService.getCurrentUser();
     if (currentUser?.address) {
       this.collectionForm.patchValue({
@@ -81,13 +81,13 @@ export class CollectionFormComponent implements OnInit {
       });
     }
 
-    // Vérifier si on est en mode édition
+  
     this.collectionId = this.route.snapshot.params['id'];
     if (this.collectionId) {
       this.isEditMode = true;
       this.loadCollection(this.collectionId);
     } else {
-      // Ajouter un premier item de déchet par défaut
+    
       this.addWasteItem();
     }
   }
@@ -141,8 +141,8 @@ export class CollectionFormComponent implements OnInit {
       type: ['PLASTIC', Validators.required],
       estimatedWeight: ['', [
         Validators.required,
-        Validators.min(1000),  // Minimum 1kg
-        Validators.max(10000), // Maximum 10kg
+        Validators.min(1000), 
+        Validators.max(10000),
         Validators.pattern(/^[0-9]+$/)
       ]],
       photos: ['']  
@@ -167,12 +167,12 @@ export class CollectionFormComponent implements OnInit {
         return;
       }
 
-      // Vider le FormArray existant
+    
       while (this.wasteItems.length) {
         this.wasteItems.removeAt(0);
       }
 
-      // Ajouter chaque déchet au FormArray
+    
       collection.wasteItems.forEach(item => {
         this.wasteItems.push(
           this.fb.group({
@@ -187,12 +187,11 @@ export class CollectionFormComponent implements OnInit {
         );
       });
 
-      // Formater la date pour l'input date
+    
       const scheduledDate = new Date(collection.scheduledDate)
         .toISOString()
         .split('T')[0];
 
-      // Mettre à jour le formulaire
       this.collectionForm.patchValue({
         scheduledDate,
         scheduledTime: collection.scheduledTime,

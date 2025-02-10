@@ -32,12 +32,12 @@ export class CollectionService {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    // Vérifier le poids total
+    
     if (collection.totalEstimatedWeight && collection.totalEstimatedWeight > 10000) {
       return throwError(() => new Error('Le poids total ne doit pas dépasser 10kg'));
     }
 
-    // Vérifier le nombre de collectes en attente
+    
     return this.getPendingCollections().pipe(
       switchMap(collections => {
         const pendingCollections = collections.filter(c => 
@@ -49,13 +49,13 @@ export class CollectionService {
           return throwError(() => new Error('Vous avez déjà 3 demandes de collecte en attente'));
         }
 
-        // Calculer le poids total de toutes les collectes en attente
+        
         const totalPendingWeight = pendingCollections.reduce(
           (total, c) => total + c.totalEstimatedWeight, 
           0
         );
 
-        // Ajouter le poids de la nouvelle collecte
+        
         const newTotalWeight = totalPendingWeight + (collection.totalEstimatedWeight || 0);
 
         if (newTotalWeight > 10000) {
@@ -84,21 +84,21 @@ export class CollectionService {
           return throwError(() => new Error('Collection not found'));
         }
 
-        // Vérifier le poids total des collections en attente
+        
         return this.getPendingCollections().pipe(
           map(collections => collections.filter(c => 
             c.customerEmail === existingCollection.customerEmail && 
             c.status === 'PENDING' &&
-            c.id !== id  // Exclure la collection en cours de modification
+            c.id !== id  
           )),
           switchMap(pendingCollections => {
-            // Calculer le poids total des autres collections en attente
+            
             const totalPendingWeight = pendingCollections.reduce(
               (total, c) => total + c.totalEstimatedWeight,
               0
             );
 
-            // Ajouter le nouveau poids de la collection modifiée
+            
             const newTotalWeight = totalPendingWeight + (collection.totalEstimatedWeight || 0);
 
             if (newTotalWeight > 10000) {
@@ -138,13 +138,13 @@ export class CollectionService {
   private updateCustomerPoints(collection: Collection): void {
     const totalPoints = collection.wasteItems.reduce((acc, item) => {
       if (item.actualWeight) {
-        // Convertir les grammes en kg et multiplier par les points par kg
+        
         return acc + (item.actualWeight / 1000) * this.POINTS_PER_KG[item.type];
       }
       return acc;
     }, 0);
 
-    // Mettre à jour les points de l'utilisateur
+    
     this.storageService.getUser(collection.customerEmail).pipe(
       map(user => {
         if (!user) throw new Error('User not found');
@@ -184,7 +184,7 @@ export class CollectionService {
 
         return this.storageService.saveCollection(updatedCollection).pipe(
           tap(() => {
-            // Calculer et attribuer les points si la collecte est validée
+            
             if (status === 'COMPLETED' && updatedCollection.wasteItems) {
               this.updateCustomerPoints(updatedCollection);
             }
@@ -200,22 +200,22 @@ export class CollectionService {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    console.log('Current user:', currentUser); // Debug log
+    console.log('Current user:', currentUser);
 
     return this.storageService.getPendingCollections(
       currentUser.email,
       currentUser.role === 'COLLECTOR'
     ).pipe(
       map(collections => {
-        console.log('Collections before filter:', collections); // Debug log
+        console.log('Collections before filter:', collections);
 
         if (currentUser.role === 'COLLECTOR' && currentUser.address?.city) {
           const collectorCity = currentUser.address.city.toLowerCase();
           const filtered = collections.filter(collection => 
             collection.address.city.toLowerCase() === collectorCity
           );
-          console.log('Filtered collections:', filtered); // Debug log
-          console.log('cities :', currentUser.address.city); // Debug log
+          console.log('Filtered collections:', filtered);
+          console.log('cities :', currentUser.address.city);
           return filtered;
         }
         return collections;
@@ -235,22 +235,22 @@ export class CollectionService {
       return throwError(() => new Error('User not authenticated'));
     }
 
-    console.log('Current user:', currentUser); // Debug log
+    console.log('Current user:', currentUser);
 
     return this.storageService.getCompletedCollection(
       currentUser.email,
       currentUser.role === 'COLLECTOR'
     ).pipe(
       map(collections => {
-        console.log('Collections before filter:', collections); // Debug log
+        console.log('Collections before filter:', collections);
 
         if (currentUser.role === 'COLLECTOR' && currentUser.address?.city) {
           const collectorCity = currentUser.address.city.toLowerCase();
           const filtered = collections.filter(collection => 
             collection.address.city.toLowerCase() === collectorCity
           );
-          console.log('Filtered collections:', filtered); // Debug log
-          console.log('cities :', currentUser.address.city); // Debug log
+          console.log('Filtered collections:', filtered);
+          console.log('cities :', currentUser.address.city);
           return filtered;
         }
         return collections;

@@ -23,19 +23,16 @@ export class DashboardLayoutComponent implements OnInit, OnDestroy {
     private router: Router,
     private store: Store
   ) {
-    // S'abonner aux changements de l'utilisateur dans le store
     this.userSubscription = this.store.select(selectAuthUser).subscribe(user => {
       this.currentUser = user;
     });
   }
 
   ngOnInit() {
-    // Initialiser l'utilisateur au chargement
     this.currentUser = this.authService.getCurrentUser();
   }
 
   ngOnDestroy() {
-    // Se désabonner pour éviter les fuites de mémoire
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }

@@ -56,16 +56,16 @@ export class CollectionsComponent implements OnInit, OnDestroy {
   constructor(private store: Store, private router: Router, private authService: AuthService) {}
 
   ngOnInit(): void {
-    console.log('CollectionsComponent initialized'); // Debug log
+    console.log('CollectionsComponent initialized');
     
     this.currentUser$.subscribe(user => {
-      console.log('Current user in component:', user); // Debug log
+      console.log('Current user in component:', user);
     });
 
     this.store.dispatch(CollectionActions.loadCollections());
 
     this.collections$.subscribe(collections => {
-      console.log('Collections in component:', collections); // Debug log
+      console.log('Collections in component:', collections);
     });
 
     this.store.select(selectCollectionsError)

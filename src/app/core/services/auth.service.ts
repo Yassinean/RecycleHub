@@ -36,7 +36,7 @@ export class AuthService {
 
         const { password: _, ...userWithoutPassword } = user;
         localStorage.setItem(this.USER_KEY, JSON.stringify(userWithoutPassword));
-        this.currentUserSubject.next(userWithoutPassword); // Update observable
+        this.currentUserSubject.next(userWithoutPassword);
 
         localStorage.setItem(this.USER_KEY, JSON.stringify(user));
         this.currentUserSubject.next(user);
@@ -53,13 +53,6 @@ export class AuthService {
 
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
-    // const storedUser = localStorage.getItem(this.USER_KEY);
-    // if (storedUser) {
-    //   const user = JSON.parse(storedUser);
-    //   this.currentUserSubject.next(user);
-    //   return user;
-    // }
-    // return null;
   }
 
   isAuthenticated(): boolean {

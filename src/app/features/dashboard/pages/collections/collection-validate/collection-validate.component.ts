@@ -61,13 +61,12 @@ export class CollectionValidateComponent implements OnInit {
         );
         this.validateForm.addControl(
           `photos_${index}`,
-          this.fb.control(null, [Validators.nullValidator]) // Photos obligatoires
+          this.fb.control(null, [Validators.nullValidator])
         );
       });
     });
   }
 
-  // Obtenir les erreurs pour un champ spécifique
   getErrorMessage(controlName: string): string {
     const control = this.validateForm.get(controlName);
     if (!control || !control.errors || !control.touched) return '';
@@ -121,7 +120,7 @@ export class CollectionValidateComponent implements OnInit {
         const actualWeight = Number(this.validateForm.get(`weight_${index}`)?.value);
         const photos = this.validateForm.get(`photos_${index}`)?.value;
 
-        // Vérification supplémentaire du poids
+  
         if (actualWeight > item.estimatedWeight * 1.2 || actualWeight < item.estimatedWeight * 0.8) {
           throw new Error(`Le poids réel pour ${this.getWasteTypeLabel(item.type)} dépasse les limites autorisées`);
         }
@@ -168,7 +167,6 @@ export class CollectionValidateComponent implements OnInit {
     }));
   }
 
-  // Prévisualisation des images
   onFileSelected(event: any, index: number) {
     const file = event.target.files[0];
     if (file) {

@@ -1,16 +1,16 @@
 export type WasteType = 'PLASTIC' | 'GLASS' | 'PAPER' | 'METAL';
 export type CollectionStatus = 
-  | 'PENDING'    // En attente
-  | 'OCCUPIED'   // Occupée
-  | 'IN_PROGRESS' // En cours
-  | 'COMPLETED'  // Validée
-  | 'REJECTED';  // Rejetée
+  | 'PENDING'   
+  | 'OCCUPIED'  
+  | 'IN_PROGRESS'
+  | 'COMPLETED' 
+  | 'REJECTED'; 
 
 export interface WasteItem {
   type: WasteType;
-  estimatedWeight: number;  // en grammes
-  actualWeight?: number;    // en grammes, rempli par le collecteur
-  photos?: string[];  // URLs des photos
+  estimatedWeight: number; 
+  actualWeight?: number;   
+  photos?: string[]; 
 }
 
 export interface Collection {
@@ -18,8 +18,8 @@ export interface Collection {
   customerEmail: string;
   collectorEmail?: string;
   wasteItems: WasteItem[];
-  totalEstimatedWeight: number;  // en grammes
-  totalActualWeight?: number;    // en grammes
+  totalEstimatedWeight: number; 
+  totalActualWeight?: number;   
   status: CollectionStatus;
   address: {
     street: string;
@@ -27,8 +27,8 @@ export interface Collection {
     postalCode: string;
   };
   scheduledDate: Date;
-  scheduledTime: string;  // format "HH:mm"
-  photos?: string[];      // URLs/Base64 des photos
+  scheduledTime: string; 
+  photos?: string[];     
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

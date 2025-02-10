@@ -5,10 +5,11 @@ import { Store } from '@ngrx/store';
 import * as CollectionActions from '../../../../core/store/actions/collection.actions';
 import { selectCollections, selectCollectionsLoading, selectCollectionsError } from '../../../../core/store/selectors/collection.selectors';
 import { selectAuthUser } from '../../../../core/store/selectors/auth.selectors';
-import { map, withLatestFrom, Subject } from 'rxjs';
-import { CollectionStatus } from '../../../../core/models/collection.model';
+import { map, withLatestFrom, Subject, Observable } from 'rxjs';
+import { Collection, CollectionStatus } from '../../../../core/models/collection.model';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
+import { CollectionService } from '../../../../core/services/collection.service';
 
 @Component({
   selector: 'app-collections',
@@ -53,7 +54,13 @@ export class CollectionsComponent implements OnInit, OnDestroy {
 
   readonly statusOrder: CollectionStatus[] = ['PENDING', 'OCCUPIED', 'IN_PROGRESS', 'COMPLETED'];
 
-  constructor(private store: Store, private router: Router, private authService: AuthService) {}
+  constructor(
+    private store: Store, 
+    private router: Router, 
+    private authService: AuthService,
+    private collectionService: CollectionService
+  ) {
+  }
 
   ngOnInit(): void {
     console.log('CollectionsComponent initialized');

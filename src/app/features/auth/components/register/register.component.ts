@@ -24,8 +24,6 @@ export class RegisterComponent {
 
   constructor(
     private formBuilder: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
     private store: Store
   ) {
     // Réinitialiser la base de données pour les tests

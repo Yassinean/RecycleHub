@@ -94,6 +94,13 @@ export const routes: Routes = [
         title: 'Profil - RecycleHub'
       },
       {
+        path: 'history',
+        loadComponent: () => 
+          import('./features/dashboard/pages/collections/collection-history/collection-history.component')
+            .then(m => m.CollectionHistoryComponent),
+        title: 'Historique des collectes - RecycleHub'
+      },
+      {
         path: 'points',
         loadComponent: () => 
           import('./features/dashboard/pages/points/points.component')

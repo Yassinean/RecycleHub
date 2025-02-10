@@ -93,7 +93,7 @@
           </h3>
         </div>
         <div class="border-t border-gray-200">
-          <table class="min-w-full divide-y divide-gray-200">
+          <table class="min-w-full divide-y divide-gray-200 table-auto">
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -177,7 +177,7 @@
 
       <!-- Actions -->
       <ng-container *ngIf="collection.status === 'PENDING'">
-        <div class="flex justify-end space-x-3">
+        <div class="flex flex-wrap justify-end space-x-3 mt-5">
           <button
             *ngIf="canAccept()"
             (click)="onAcceptCollection(collection.id)"
@@ -216,4 +216,4 @@
       </ng-container>
     </div>
   </ng-container>
-</div> 
+</div>

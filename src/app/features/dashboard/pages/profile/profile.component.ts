@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { AuthService } from '../../../../core/services/auth.service';
 import { User } from '../../../../core/models/user.model';
 import { DEFAULT_PROFILE_IMAGE } from '../../../../core/constants/default-profile';
+import * as AuthActions from '../../../../core/store/actions/auth.actions';
 
 @Component({
   selector: 'app-profile',
@@ -75,6 +76,7 @@ export class ProfileComponent implements OnInit {
       (user) => {
         this.currentUser = user;
         this.isEditing = false;
+        this.store.dispatch(AuthActions.loginSuccess({ user }));
         alert('Profil mis à jour avec succès');
       },
       (error) => {
